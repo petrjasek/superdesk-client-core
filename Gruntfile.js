@@ -36,15 +36,14 @@ module.exports = function(grunt) {
     grunt.registerTask('hint', ['eslint']);
 
     // Test runner tasks and CI
-    grunt.registerTask('test', ['ngtemplates:dev', 'karma:unit']);
+    grunt.registerTask('test', ['karma:unit']);
     grunt.registerTask('ci', ['test', 'hint']);
-    grunt.registerTask('ci:travis', ['ngtemplates:dev', 'karma:travis', 'hint']);
+    grunt.registerTask('ci:travis', ['karma:travis', 'hint']);
     grunt.registerTask('bamboo', ['karma:bamboo']);
 
     // UI styling documentation
     grunt.registerTask('ui-guide', [
         'clean',
-        'ngtemplates:dev',
         'ngtemplates:ui-guide',
         'copy:assets-ui-guide',
         'webpack-dev-server:ui-guide',
@@ -58,7 +57,6 @@ module.exports = function(grunt) {
         'copy:config',
         'copy:locales',
         'ngtemplates:gen-apps',
-        //'ngtemplates:dev',
         'webpack-dev-server:start',
     ]);
 
