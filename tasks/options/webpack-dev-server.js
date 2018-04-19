@@ -19,7 +19,7 @@ module.exports = function(grunt) {
         },
 
         start: {
-            webpack: {devtool: 'eval'},
+            webpack: {mode: 'development'},
         },
 
         'ui-guide': {

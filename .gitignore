@@ -4,12 +4,10 @@ package-lock.json
 nbproject
 bower
 dist
-templates-cache.generated.js
 .tmp
 test-server/env
 test-server/__pycache__
 e2e-test-results
-templates-cache.generated.js
 .env
 npm-debug.log
 index.html

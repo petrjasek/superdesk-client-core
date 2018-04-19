@@ -58,7 +58,7 @@ module.exports = function(grunt) {
         'copy:config',
         'copy:locales',
         'ngtemplates:gen-apps',
-        'ngtemplates:dev',
+        //'ngtemplates:dev',
         'webpack-dev-server:start',
     ]);
 
@@ -72,7 +72,6 @@ module.exports = function(grunt) {
             'copy:assets',
             'copy:locales',
             'ngtemplates:gen-apps',
-            'ngtemplates:core',
         ]);
 
         // if we have "*.po" files in "superdesk/client"

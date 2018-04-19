@@ -32,7 +32,7 @@ module.exports = {
                 dot: true,
                 cwd: '<%= coreDir %>',
                 dest: '<%= distDir %>',
-                src: ['images/**/*', 'scripts/**/*.{json,svg}'],
+                src: ['images/**/*', 'scripts/**/*.{json,svg,html}'],
             },
         ],
     },

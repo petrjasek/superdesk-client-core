@@ -27,9 +27,15 @@ module.exports = function makeConfig(grunt) {
         const apps = sdConfig.importApps || sdConfig.apps || [];
 
         // include only 'superdesk-core' and valid modules inside node_modules
-        let validModules = ['superdesk-core'].concat(apps);
+        const validModules = ['superdesk-core'].concat(apps);
 
-        return !validModules.some((app) => p.indexOf(app) > -1);
+        const excluded = !validModules.some((app) => p.indexOf(app) !== -1);
+
+        if (!excluded) {
+            console.info('p', p);
+        }
+
+        return excluded;
     };
 
     return {
@@ -86,8 +92,16 @@ module.exports = function makeConfig(grunt) {
                     loader: 'babel-loader',
                     options: {
                         cacheDirectory: true,
-                        presets: ['es2015', 'react'],
+                        presets: ['env', 'react'],
                         plugins: ['transform-object-rest-spread'],
+                        env: {
+                            targets: {
+                                browsers: [
+                                    'last 2 Chrome versions',
+                                    'last 2 Firefox versions',
+                                ],
+                            },
+                        },
                     },
                 },
                 {
