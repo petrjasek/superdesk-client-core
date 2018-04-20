@@ -1,6 +1,6 @@
 var path = require('path');
-var webpack = require('webpack');
 var lodash = require('lodash');
+var webpack = require('webpack');
 
 // makeConfig creates a new configuration file based on the passed options.
 module.exports = function makeConfig(grunt) {
@@ -9,11 +9,15 @@ module.exports = function makeConfig(grunt) {
     if (process.env.SUPERDESK_CONFIG) {
         appConfigPath = path.join(process.cwd(), process.env.SUPERDESK_CONFIG);
     }
+
     if (grunt.option('config')) {
         appConfigPath = path.join(process.cwd(), grunt.option('config'));
     }
 
     const sdConfig = lodash.defaultsDeep(require(appConfigPath)(grunt), getDefaults(grunt));
+
+    const apps = sdConfig.importApps || sdConfig.apps || [];
+    const validModules = ['superdesk-core'].concat(apps);
 
     // shouldExclude returns true if the path p should be excluded from loaders
     // such as 'babel' or 'eslint'. This is to avoid including node_modules into
@@ -24,18 +28,11 @@ module.exports = function makeConfig(grunt) {
             return false;
         }
 
-        const apps = sdConfig.importApps || sdConfig.apps || [];
-
         // include only 'superdesk-core' and valid modules inside node_modules
-        const validModules = ['superdesk-core'].concat(apps);
+        const include = validModules.some((app) => p.indexOf(app) !== -1);
 
-        const excluded = !validModules.some((app) => p.indexOf(app) !== -1);
-
-        if (!excluded) {
-            console.info('p', p);
-        }
-
-        return excluded;
+        // exclude also node_modules in included libs
+        return !include || p.indexOf('node_modules') !== p.lastIndexOf('node_modules');
     };
 
     return {
@@ -88,25 +85,28 @@ module.exports = function makeConfig(grunt) {
             rules: [
                 {
                     test: /\.jsx?$/,
-                    exclude: shouldExclude,
                     loader: 'babel-loader',
+                    exclude: shouldExclude,
                     options: {
                         cacheDirectory: true,
-                        presets: ['env', 'react'],
                         plugins: ['transform-object-rest-spread'],
-                        env: {
-                            targets: {
-                                browsers: [
-                                    'last 2 Chrome versions',
-                                    'last 2 Firefox versions',
-                                ],
-                            },
-                        },
+                        presets: [
+                            ['env', {
+                                targets: {
+                                    browsers: [
+                                        'last 3 Chrome versions',
+                                        'last 3 Firefox versions',
+                                        'last 1 Edge versions', // without this uglifyjs fails atm
+                                    ],
+                                },
+                            }],
+                            'react',
+                        ],
                     },
                 },
                 {
                     test: /\.html$/,
-                    loader: 'html-loader',
+                    use: 'html-loader',
                 },
                 {
                     test: /\.css$/,

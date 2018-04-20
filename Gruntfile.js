@@ -79,7 +79,6 @@ module.exports = function(grunt) {
 
         if (grunt.file.expand('po/*.po').length && pkgName != 'superdesk-core') {
             grunt.task.run([
-                'nggettext_extract',
                 'nggettext_compile',
             ]);
         }

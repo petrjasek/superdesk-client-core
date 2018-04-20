@@ -1,5 +1,3 @@
-var webpack = require('webpack');
-
 module.exports = function(grunt) {
     var config = require('../../webpack.config.js')(grunt);
 

@@ -8,6 +8,7 @@ module.exports = function(config) {
 
     // in karma, entry is read from files prop
     webpackConfig.entry = null;
+    webpackConfig.mode = 'development';
     webpackConfig.devtool = 'inline-source-map';
 
     config.set({
