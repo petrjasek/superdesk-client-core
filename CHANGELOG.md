@@ -1,5 +1,11 @@
 # Superdesk Client Changelog
 
+## [1.25.1] 2018-10-03
+
+### Fixed
+
+- Fix performance issues with editor3.
+
 ## [1.25.0] 2018-09-20
 
 ### Fixed
