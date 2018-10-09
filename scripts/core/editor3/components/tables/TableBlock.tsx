@@ -23,7 +23,6 @@ export class TableBlockComponent extends React.Component<any, any> {
     constructor(props) {
         super(props);
 
-        this.onCellChange = this.onCellChange.bind(this);
         this.getCellEditorState = this.getCellEditorState.bind(this);
         this.getData = this.getData.bind(this);
         this.onFocus = this.onFocus.bind(this);
@@ -83,9 +82,16 @@ export class TableBlockComponent extends React.Component<any, any> {
         event.stopPropagation();
     }
 
-    onUndo() {
+    onUndo(row, col) {
         const {editorState, parentOnChange} = this.props;
         const newEditorState = EditorState.undo(editorState);
+
+        parentOnChange(newEditorState, false);
+    }
+
+    onRedo(row, col) {
+        const {editorState, parentOnChange} = this.props;
+        const newEditorState = EditorState.redo(editorState);
 
         parentOnChange(newEditorState, false);
     }
@@ -111,7 +117,8 @@ export class TableBlockComponent extends React.Component<any, any> {
                                         readOnly={this.props.readOnly}
                                         editorState={this.getCellEditorState(data, i, j)}
                                         onChange={this.onCellChange.bind(this, i, j)}
-                                        onUndo={this.onUndo.bind(this)}
+                                        onUndo={this.onUndo.bind(this, i, j)}
+                                        onRedo={this.onRedo.bind(this, i, j)}
                                         onFocus={this.onFocus.bind(this, i, j)} />,
                                 )}
                             </tr>,
