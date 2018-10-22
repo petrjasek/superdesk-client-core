@@ -1,5 +1,11 @@
 # Superdesk Client Changelog
 
+## [1.25.2] 2018-10-22
+
+### Changed
+
+- Remove display white space feature from editor3 to improve performance.
+
 ## [1.25.1] 2018-10-03
 
 ### Fixed
