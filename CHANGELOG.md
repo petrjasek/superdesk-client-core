@@ -1,5 +1,11 @@
 # Superdesk Client Changelog
 
+## [1.26.5] 2018-12-13
+
+### Fixed
+
+- Fix missing crops when poi validation is off.
+
 ## [1.26.4] 2018-12-10
 
 ### Fixed
