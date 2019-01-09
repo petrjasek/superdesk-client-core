@@ -861,6 +861,7 @@ export function AuthoringDirective(superdesk, superdeskFlags, authoringWorkspace
                 }
 
                 $rootScope.$broadcast('item:nextStage', {stage: stageList[stageIndex], itemId: $scope.item._id});
+                $scope.close();
             };
 
             // Returns true if the given text is an URL
