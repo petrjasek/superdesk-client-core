@@ -1,4 +1,4 @@
-import {RichUtils, EditorState} from 'draft-js';
+import {RichUtils, EditorState, Modifier, ContentState, SelectionState, ContentBlock} from 'draft-js';
 import * as entityUtils from '../components/links/entityUtils';
 import {onChange} from './editor3';
 import * as Links from '../helpers/links';
@@ -6,6 +6,9 @@ import * as Blocks from '../helpers/blocks';
 import * as Highlights from '../helpers/highlights';
 import {removeFormatFromState} from '../helpers/removeFormat';
 import {insertEntity} from '../helpers/draftInsertEntity';
+import {IEditorStore} from '../store';
+import {assertNever} from 'core/helpers/typescript-helpers';
+import {ITextCase} from '../actions';
 
 /**
  * @description Contains the list of toolbar related reducers.
@@ -32,6 +35,8 @@ const toolbar = (state = {}, action) => {
         return setPopup(state, action.payload);
     case 'TOOLBAR_TOGGLE_INVISIBLES':
         return toggleInvisibles(state);
+    case 'CHANGE_CASE':
+        return changeCase(state, action.payload);
     default:
         return state;
     }
@@ -222,5 +227,60 @@ const toggleInvisibles = (state) => {
  * @description Sets the toolbar popup to the given type.
  */
 const setPopup = (state, {type, data}) => ({...state, popup: {type, data}});
+
+function changeCase(state: IEditorStore, payload: {changeTo: ITextCase, selection: SelectionState}) {
+    const getChangedText = (text: string) => {
+        if (changeTo === 'uppercase') {
+            return text.toUpperCase();
+        } else if (changeTo === 'lowercase') {
+            return text.toLowerCase();
+        } else {
+            assertNever(changeTo);
+        }
+    };
+
+    const {selection, changeTo} = payload;
+    const contentState = state.editorState.getCurrentContent();
+
+    let ended = false;
+    let started = false;
+    const startKey = selection.getStartKey();
+    const endKey = selection.getEndKey();
+
+    const nextBlockMap = state.editorState.getCurrentContent().getBlockMap().map((block) => {
+        const key = block.getKey();
+        const from = key === startKey ? selection.getStartOffset() : 0;
+        const to = key === endKey ? selection.getEndOffset() : block.getLength();
+
+        if (key === startKey) {
+            started = true;
+        }
+
+        if (ended === true || started === false) {
+            return block;
+        }
+
+        const text = block.getText();
+        const before = text.slice(0, from);
+        const toReplace = text.slice(from, to);
+        const after = text.slice(to, block.getLength());
+
+        if (key === endKey) {
+            ended = true;
+        }
+
+        return block.merge({
+            text: before + getChangedText(toReplace) + after,
+        });
+    }) as ContentState;
+
+    const nextContentState = contentState.merge({
+        blockMap: nextBlockMap,
+    }) as ContentState;
+
+    const nextEditorState = EditorState.push(state.editorState, nextContentState, 'spellcheck-change');
+
+    return {...state, editorState: EditorState.forceSelection(nextEditorState, selection)};
+}
 
 export default toolbar;
