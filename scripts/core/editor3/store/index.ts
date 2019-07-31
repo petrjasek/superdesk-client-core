@@ -98,6 +98,7 @@ export default function createEditorStore(props: IProps, spellcheck, isReact = f
     }
 
     const content = getInitialContent(props);
+    const decorators = Editor3Base.getDecorator(disableSpellchecker);
 
     const onChangeValue = isReact ? props.onChange : debounce(onChange.bind(props), props.debounce);
 
