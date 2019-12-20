@@ -53,6 +53,8 @@ export function MediaMetadata(userList, archiveService, metadata) {
 
                 return term.name;
             };
+
+            scope.getSelectedCVItems = (cv) => (scope.item.subject || []).filter((item) => item.scheme === cv._id);
         },
     };
 }

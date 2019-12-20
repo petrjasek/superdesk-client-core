@@ -53,6 +53,12 @@
             <dt>{{ cv.display_name | translate }}</dt>
             <dd>{{ getLocaleName(item[cv.schema_field], cv._id) }}</dd>
         </dl>
+        <dl ng-repeat="cv in cvs track by cv._id" ng-if="getSelectedCVItems(cv).length">
+            <dt>{{ cv.display_name }}</dt>
+            <dd ng-repeat="cvItem in getSelectedCVItems(cv) track by cvItem.qcode">
+                {{ cvItem.name }}
+            </dd>
+        </dl>
         <dl ng-if="item.genre  && item.genre.length > 0 && !genreInCvs">
             <dt translate>Genre</dt>
             <dd>{{ item.genre | mergeWords:'name'}}</dd>
