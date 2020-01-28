@@ -57,20 +57,19 @@ export function MultiActionBarController(
             send.allAs(multi.getItems(), 'externalsourceTo') :
             send.all(multi.getItems())
         )
+        .then(() => {
+            multi.reset();
+        })
         .finally(() => {
             setActioning(false, items);
         });
     };
 
     const setActioning = (actioning: boolean, items) => {
-        if (!items) {
-            items = multi.getItems();
-        }
-
         items.forEach((item) => {
             $rootScope.$broadcast('item:actioning', {item, actioning});
         });
-    }
+    };
 
     this.canRemoveIngestItems = function() {
         var canRemove = true;

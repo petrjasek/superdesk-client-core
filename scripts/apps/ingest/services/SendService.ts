@@ -92,7 +92,7 @@ export function SendService(
      * @param {Array} items
      */
     function sendAll(items) {
-        return Promise.all(items.map, sendOne);
+        return Promise.all(items.map(sendOne));
     }
 
     /**
