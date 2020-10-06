@@ -112,13 +112,13 @@ export default angular.module('superdesk.core.directives.typeahead', [])
                 var $list = element.find('.item-list');
 
                 $input.on('focus', () => {
-                    scope.$apply(() => {
+                    scope.$applyAsync(() => {
                         scope.focused = true;
                     });
                 });
 
                 $input.on('blur', () => {
-                    scope.$apply(() => {
+                    scope.$applyAsync(() => {
                         scope.focused = false;
                         if (typeof scope.blur === 'function') {
                             scope.blur({item: scope.active});
@@ -127,27 +127,27 @@ export default angular.module('superdesk.core.directives.typeahead', [])
                 });
 
                 $list.on('mouseover', () => {
-                    scope.$apply(() => {
+                    scope.$applyAsync(() => {
                         scope.mousedOver = true;
                     });
                 });
 
                 $list.on('mouseleave', () => {
-                    scope.$apply(() => {
+                    scope.$applyAsync(() => {
                         scope.mousedOver = false;
                     });
                 });
 
                 $input.on('keydown', (e) => {
                     if (e.keyCode === Keys.enter) {
-                        scope.$apply(() => {
+                        scope.$applyAsync(() => {
                             controller.selectActive();
                         });
                         e.preventDefault();
                     }
 
                     if (e.keyCode === Keys.escape) {
-                        scope.$apply(() => {
+                        scope.$applyAsync(() => {
                             scope.hide = true;
                         });
                     }
@@ -159,7 +159,7 @@ export default angular.module('superdesk.core.directives.typeahead', [])
                         e.preventDefault();
                         e.stopPropagation();
                         if (list && list.children.length) {
-                            scope.$apply(() => {
+                            scope.$applyAsync(() => {
                                 controller.activateNextItem();
                                 scrollToActive(list, active);
                             });
@@ -170,7 +170,7 @@ export default angular.module('superdesk.core.directives.typeahead', [])
                         e.preventDefault();
                         e.stopPropagation();
                         if (list && list.children.length) {
-                            scope.$apply(() => {
+                            scope.$applyAsync(() => {
                                 controller.activatePreviousItem();
                                 scrollToActive(list, active);
                             });
@@ -225,13 +225,13 @@ export default angular.module('superdesk.core.directives.typeahead', [])
             });
 
             element.on('mouseenter', (e) => {
-                scope.$apply(() => {
+                scope.$applyAsync(() => {
                     controller.activate(item);
                 });
             });
 
             element.on('click', (e) => {
-                scope.$apply(() => {
+                scope.$applyAsync(() => {
                     controller.select(item);
                 });
             });
