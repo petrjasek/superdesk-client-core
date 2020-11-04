@@ -80,12 +80,7 @@ describe('fetch', () => {
         expect(btnFetchAndOpen.getAttribute('disabled')).toBeFalsy();
 
         // Adding a new desk with no member, which serves as a non-member desk when selected
-        desks.openDesksSettings();
-        desks.getNewDeskButton().click();
-        desks.deskNameElement().sendKeys('Test Desk');
-        desks.deskDescriptionElement().sendKeys('Test Description');
-        desks.deskSourceElement().sendKeys('Test Source');
-        desks.setDeskType('authoring');
+        desks.createDesk('Test Desk', 'authoring', 'Test Source', 'Test Description');
         desks.actionDoneOnGeneralTab();
 
         workspace.openIngest();
@@ -103,12 +98,7 @@ describe('fetch', () => {
         expect(btnFetchAndOpen.getAttribute('disabled')).toBeFalsy();
 
         // Adding a new desk with no member, which serves as a non-member desk when selected
-        desks.openDesksSettings();
-        desks.getNewDeskButton().click();
-        desks.deskNameElement().sendKeys('Test Desk');
-        desks.deskDescriptionElement().sendKeys('Test Description');
-        desks.deskSourceElement().sendKeys('Test Source');
-        desks.setDeskType('authoring');
+        desks.createDesk('Test Desk', 'authoring', 'Test Source', 'Test Description');
         desks.actionSaveAndContinueOnGeneralTab(); // save desk and continue to Stages tab
 
         // Consider one stage with Global Read OFF and another stage with Global Read ON status.

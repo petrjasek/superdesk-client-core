@@ -345,6 +345,7 @@ class Authoring {
         };
 
         this.createTextItem = function() {
+            return this.createTextItemFromTemplate('testing');
             return element(by.className('sd-create-btn'))
                 .click()
                 .then(() => element(by.id('create_text_article')).click());

@@ -58,6 +58,8 @@ class Desks {
     getStageOutgoingMacro: any;
     setStageOutgoingMacro: (name: any) => void;
     addUser: (userName: any) => void;
+    createDesk: (name: string, type: 'authoring' | 'production', source: string, desc: string) => void;
+    setDefaultProfile: () => void;
 
     constructor() {
         /** List of desks on desk settings list **/
@@ -271,6 +273,7 @@ class Desks {
          * Save & Continue action on general tab
          **/
         this.actionSaveAndContinueOnGeneralTab = function() {
+            this.setDefaultProfile();
             el(['save-and-continue']).click();
         };
 
@@ -278,6 +281,7 @@ class Desks {
          * Done action on general tab
          **/
         this.actionDoneOnGeneralTab = function() {
+            this.setDefaultProfile();
             element(by.id('done-general')).click();
         };
 
@@ -489,6 +493,21 @@ class Desks {
             browser.sleep(1000);
             element.all(by.repeater('user in users._items')).first().click();
             element(by.id('next-people')).click();
+        };
+
+        this.setDefaultProfile = () => {
+            element(by.model('desk.edit.default_content_template')).all(by.tagName('option')).get(1).click();
+            element(by.model('desk.edit.default_content_profile')).all(by.tagName('option')).get(1).click();
+        };
+
+        this.createDesk = (name: string, type: 'authoring' | 'production', source: string, desc: string) => {
+            this.openDesksSettings();
+            this.getNewDeskButton().click();
+            this.deskNameElement().sendKeys(name);
+            this.deskDescriptionElement().sendKeys(desc);
+            this.deskSourceElement().sendKeys(source);
+            this.setDeskType(type);
+            this.setDefaultProfile();
         };
     }
 }
