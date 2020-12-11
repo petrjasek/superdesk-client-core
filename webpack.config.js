@@ -64,7 +64,7 @@ module.exports = function makeConfig(grunt) {
             alias: {
                 'moment-timezone': 'moment-timezone/builds/moment-timezone-with-data-2012-2022',
                 'rangy-saverestore': 'rangy/lib/rangy-selectionsaverestore',
-                'angular-embedly': 'angular-embedly/em-minified/angular-embedly.min',
+                'angular-embedly': path.join(__dirname, 'scripts', 'libs', 'angular-embedly.min'),
                 'jquery-gridster': 'gridster/dist/jquery.gridster.min',
                 'external-apps': path.join(process.cwd(), 'dist', 'app-importer.generated.js'),
                 // ensure that react is loaded only once (3rd party apps can load more...)
