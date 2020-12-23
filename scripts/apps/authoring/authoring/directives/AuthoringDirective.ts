@@ -922,6 +922,7 @@ export function AuthoringDirective(
             };
 
             $scope.autosave = function(item, timeout) {
+                return;
                 $scope.dirty = true;
                 angular.extend($scope.item, item); // make sure all changes are available
                 return coreApplyMiddleware(onChangeMiddleware, {item: $scope.item, original: $scope.origItem}, 'item')

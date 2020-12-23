@@ -165,6 +165,7 @@ function SdTextEditorController(_, EMBED_PROVIDERS, $timeout, editor, config, $q
         return blocks;
     }
     angular.extend(self, {
+        id: 1,
         configuration: angular.extend({embeds: true}, config.editor || {}),
         blocks: [],
         initEditorWithOneBlock: function(model) {
@@ -243,7 +244,8 @@ function SdTextEditorController(_, EMBED_PROVIDERS, $timeout, editor, config, $q
             var serialized = self.serializeBlock();
 
             if (serialized !== self.model.$viewValue) {
-                self.model.$setViewValue(serialized);
+                console.info('SET ctrl');
+                self.model.$setViewValue(serialized, 'manual');
             }
         },
         /**
@@ -327,17 +329,15 @@ function SdTextEditorController(_, EMBED_PROVIDERS, $timeout, editor, config, $q
             return $q((resolve) => {
                 $timeout(() => {
                     self.blocks.splice(position, 0, newBlock);
-                    $timeout(() => {
-                        self.commitChanges();
-                        if (!doNotRenderBlocks) {
-                            $timeout(() => {
-                                self.renderBlocks();
-                                resolve(newBlock);
-                            }, 0, false);
-                        } else {
+                    if (!doNotRenderBlocks) {
+                        $timeout(() => {
+                            self.renderBlocks();
+                            self.commitChanges();
                             resolve(newBlock);
-                        }
-                    }, 0, false);
+                        }, 0, false);
+                    } else {
+                        resolve(newBlock);
+                    }
                 });
             });
         },
@@ -393,7 +393,13 @@ function SdTextEditorController(_, EMBED_PROVIDERS, $timeout, editor, config, $q
                 }
                 return hash;
             }
-            return String(Math.abs(hashCode(block.body))) + String(self.getBlockPosition(block));
+
+            if (!block.id) {
+                block.id = this.id++;
+            }
+
+            return block.id;
+            //return String(Math.abs(hashCode(block.body))) + String(self.getBlockPosition(block));
         },
     });
 }

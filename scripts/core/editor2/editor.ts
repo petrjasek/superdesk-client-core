@@ -457,10 +457,12 @@ function EditorService(spellcheck, $q, renditionsService, utils) {
      * @param {Scope} scope
      */
     this.commitScope = function(scope) {
+        console.info('COMMIT');
         replaceAbbreviations(scope).then(() => {
             var nodeValue = scope.node.innerHTML;
 
             if (nodeValue !== scope.model.$viewValue) {
+                console.info('SET edit');
                 scope.model.$setViewValue(nodeValue);
                 scope.history.add(scope.model.$viewValue);
             }
@@ -854,6 +856,7 @@ angular.module('superdesk.apps.editor2', [
                 scope.$watch(function outsideModelChange() {
                     return ngModel.$viewValue;
                 }, () => {
+                    return;
                     $timeout(() => {
                         // if controller is ready and the value has changed
                         if (controller.blocks.length > 0 && ngModel.$viewValue !== controller.serializeBlock()) {

@@ -112,13 +112,21 @@ export function ArticleEditDirective(
                 // ONLY for editor2 (with blocks)
                 try {
                     angular.module('superdesk.apps.editor2');
-                    history.watch('item', mainEditScope || scope);
+                    history.watch('item', mainEditScope || scope, "editor2", {timeout: 200});
                 } catch (e) {
                     // no-op
                 }
 
                 scope.$on('History.undone', triggerAutosave);
                 scope.$on('History.redone', triggerAutosave);
+                scope.$on('History.archived', (evt, data) => {
+                    console.info('HISTORY');
+                    Object.keys(data.newValue).forEach((key) => {
+                        if (!angular.equals(data.newValue[key], data.oldValue[key])) {
+                            console.info('CHANGE', key, data.newValue[key], data.oldValue[key]);
+                        }
+                    });
+                });
 
                 function triggerAutosave() {
                     if (mainEditScope) {

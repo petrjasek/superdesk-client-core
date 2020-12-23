@@ -277,7 +277,7 @@
          ng-model="item.body_html"
          ng-if="_editable"
          ng-change="autosave(item)"
-         ng-model-options="{debounce: 100}"
+         ng-model-options="{debounce: {default: 100, manual: 0}}"
          data-associations="item.associations"
          data-language="item.language"
          data-type="item.type"
