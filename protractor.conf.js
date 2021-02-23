@@ -42,7 +42,6 @@ var config = {
     framework: 'jasmine2',
     jasmineNodeOpts: {
         showColors: true,
-        defaultTimeoutInterval: 200000,
     },
 
     capabilities: {
