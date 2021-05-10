@@ -1,20 +1,37 @@
 import React from 'react';
+import ng from 'core/services/ng';
 
 import {gettext} from 'core/utils';
 import {SettingsPage} from 'apps/settings/settings-page';
-import {SettingsPageHeader} from 'apps/settings/settings-page-header';
-import {SettingsPageContent} from 'apps/settings/settings-page-content';
-import {getGenericListPageComponent} from 'core/ui/components/ListPage/generic-list-page';
+import {FormFieldType} from 'core/ui/components/generic-form/interfaces/form';
 import {ListItem, ListItemActionsMenu, ListItemColumn} from 'core/components/ListItem';
-import { FormFieldType } from 'core/ui/components/generic-form/interfaces/form';
-import { IBaseRestApiResponse, IFormGroup, IGenericListPageComponent, IUser } from 'superdesk-api';
+import {getFormFieldPreviewComponent} from 'core/ui/components/generic-form/form-field';
+import {getGenericListPageComponent} from 'core/ui/components/ListPage/generic-list-page';
+import {IBaseRestApiResponse, IFormGroup, IGenericListPageComponent, IUser} from 'superdesk-api';
+import {Label} from 'superdesk-ui-framework/react/components/Label';
+import {assertNever} from 'core/helpers/typescript-helpers';
 
 interface IMessage extends IBaseRestApiResponse {
-    type: 'warning' | 'alert' | 'primary/info' | 'success';
+    type: 'warning' | 'alert' | 'primary' | 'success';
     is_active: boolean;
     message_title: string;
     message: string;
     user_id: IUser['_id'];
+}
+
+const getTypeLabel = (type: IMessage["type"]) => {
+    switch(type) {
+        case 'alert':
+            return gettext('Alert');
+        case 'primary':
+            return gettext('Info');
+        case 'warning':
+            return gettext('Warning');
+        case 'success':
+            return gettext('Success');
+        default:
+            assertNever(type);
+    }
 }
 
 export class SystemMessagesSettingsComponent extends React.PureComponent {
@@ -34,10 +51,10 @@ export class SystemMessagesSettingsComponent extends React.PureComponent {
                     type: FormFieldType.select,
                     component_parameters: {
                         options: [
-                            {id: 'warning', label: gettext('Warning')},
-                            {id: 'alert', label: gettext('Alert')},
-                            {id: 'primary/info', label: gettext('Info')},
-                            {id: 'success', label: gettext('Success')},
+                            {id: 'primary', label: getTypeLabel('primary')},
+                            {id: 'success', label: getTypeLabel('success')},
+                            {id: 'warning', label: getTypeLabel('warning')},
+                            {id: 'alert', label: getTypeLabel('alert')},
                         ],
                     },
                 },
@@ -54,7 +71,7 @@ export class SystemMessagesSettingsComponent extends React.PureComponent {
                 {
                     field: 'user_id',
                     type: FormFieldType.hidden,
-                    value: 'foo',
+                    value: ng.get('session').identity._id,
                 },
             ],
         };
@@ -66,10 +83,12 @@ export class SystemMessagesSettingsComponent extends React.PureComponent {
         ) => (
             <ListItem key={key} onClick={() => page.openPreview(item._id)}>
                 <ListItemColumn bold noBorder>
-                    {item.message_title}
+                    <b>{item.message_title}</b>
+                    {' '}
+                    <Label type={item.type} text={getTypeLabel(item.type)} />
                 </ListItemColumn>
                 <ListItemColumn ellipsisAndGrow noBorder>
-                    {item.message}
+                    {getFormFieldPreviewComponent(item, formConfig.form[3], {showAsPlainText: true})}
                 </ListItemColumn>
                 <ListItemActionsMenu>
                     <div style={{display: 'flex'}}>
@@ -103,20 +122,11 @@ export class SystemMessagesSettingsComponent extends React.PureComponent {
 
         return (
             <SettingsPage title={gettext('System Messages')}>
-                <SettingsPageHeader>
-                    <button className="btn btn--primary">
-                        <i className="icon-plus-sign icon--white" />
-                        {' '}
-                        {gettext('New message')}
-                    </button>
-                </SettingsPageHeader>
-                <SettingsPageContent>
-                    <ListComponent
-                        renderRow={renderRow}
-                        formConfig={formConfig}
-                        defaultSortOption={{field: 'message_title', direction: 'ascending'}}
-                    />
-                </SettingsPageContent>
+                <ListComponent
+                    renderRow={renderRow}
+                    formConfig={formConfig}
+                    defaultSortOption={{field: 'message_title', direction: 'ascending'}}
+                />
             </SettingsPage>
         );
     }
