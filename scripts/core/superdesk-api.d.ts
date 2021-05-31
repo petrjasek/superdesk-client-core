@@ -143,6 +143,7 @@ declare module 'superdesk-api' {
     export type IExtensionObject = {
         extension: IExtension;
         activationResult: IExtensionActivationResult;
+        configuration: {[key: string]: {}};
     };
 
     export interface IExtensionModule {
@@ -737,6 +738,30 @@ declare module 'superdesk-api' {
     }>;
 
 
+    // SUPERDESK QUERY FORMAT
+
+    export type IComparisonOptions =
+        {$eq: any}
+        | {$ne: any}
+        | {$gt: any}
+        | {$gte: any}
+        | {$lt: any}
+        | {$lte: any}
+        | {$in: any};
+
+    export type IComparison = {[field: string]: IComparisonOptions};
+    export type IAndOperator = {$and: Array<IComparison | ILogicalOperator>};
+    export type IOrOperator = {$or: Array<IComparison | ILogicalOperator>};
+    export type ILogicalOperator = IAndOperator | IOrOperator;
+
+    export interface ISuperdeskQuery {
+        filter: ILogicalOperator;
+        fullTextSearch?: string;
+        sort: Array<{[field: string]: 'asc' | 'desc'}>;
+        page: number;
+        max_results: number;
+    }
+
 
     // REST API
 
@@ -955,9 +980,15 @@ declare module 'superdesk-api' {
 
     export interface IPropsListItemColumn {
         ellipsisAndGrow?: boolean;
+        grow?: boolean;
         noBorder?: boolean;
+        noPadding?: boolean;
         justifyContent?: string;
         bold?: boolean;
+    }
+
+    export interface IPropsListItemRow {
+        justifyContent?: string;
     }
 
     export interface IGridComponentProps {
@@ -1053,11 +1084,26 @@ declare module 'superdesk-api' {
         size?: number;
     }
 
+    export interface IPropsIconBig {
+        name: string;
+    }
+
     export interface IPropsSpacer {
         type: 'horizontal' | 'vertical';
         spacing: 'medium';
         align?: 'start' | 'end' | 'center' | 'stretch';
         children: Array<React.ReactNode>;
+    }
+
+    export interface ILiveQueryProps<T extends IBaseRestApiResponse> {
+        resource: string;
+        query: ISuperdeskQuery;
+        children: (result: IRestApiResponse<T>) => JSX.Element;
+    }
+
+    export interface ILiveResourcesProps {
+        resources: Array<{resource: string, ids?: Array<string>}>;
+        children: (result: Array<IRestApiResponse<unknown>>) => JSX.Element;
     }
 
     export interface IAttachmentsWrapperProps {
@@ -1140,6 +1186,13 @@ declare module 'superdesk-api' {
         _id: string;
     }
 
+    export interface IResourceChange {
+        changeType: 'created' | 'updated' | 'deleted';
+        resource: string;
+        itemId: string;
+        fields?: {[key: string]: 1};
+    }
+
     export interface IResourceCreatedEvent {
         resource: string;
         _id: string;
@@ -1161,6 +1214,8 @@ declare module 'superdesk-api' {
         attachmentsAdded: Array<IAttachment>;
         attachmentRemoved: IAttachment;
         attachmentUpdated: IAttachment;
+
+        menuItemBadgeValueChange: {menuId: string; badgeValue: string};
     }
 
     export interface IWebsocketMessage<T> {
@@ -1376,6 +1431,10 @@ declare module 'superdesk-api' {
         instance: {
             config: ISuperdeskGlobalConfig
         };
+
+        /** Retrieves configuration options passed when registering an extension. */
+        getExtensionConfig(): {[key: string]: any};
+
         ui: {
             article: {
                 view(id: IArticle['_id']): void;
@@ -1452,6 +1511,7 @@ declare module 'superdesk-api' {
             ): React.ComponentType<Props>;
             ListItem: React.ComponentType<IListItemProps>;
             ListItemColumn: React.ComponentType<IPropsListItemColumn>;
+            ListItemRow: React.ComponentType<IPropsListItemRow>;
             ListItemActionsMenu: React.ComponentType;
             List: {
                 Item: React.ComponentType<{onClick: any}>;
@@ -1472,8 +1532,11 @@ declare module 'superdesk-api' {
             ArticleItemConcise: React.ComponentType<{article: IArticle}>;
             GroupLabel: React.ComponentType<ISpacingProps>;
             Icon: React.ComponentType<IPropsIcon>;
+            IconBig: React.ComponentType<IPropsIconBig>;
             TopMenuDropdownButton: React.ComponentType<{onClick: () => void; disabled?: boolean; active: boolean; pulsate?: boolean; 'data-test-id'?: string;}>;
             getDropdownTree: <T>() => React.ComponentType<IPropsDropdownTree<T>>;
+            getLiveQueryHOC: <T extends IBaseRestApiResponse>() => React.ComponentType<ILiveQueryProps<T>>;
+            WithLiveResources: React.ComponentType<ILiveResourcesProps>;
             Spacer: React.ComponentType<IPropsSpacer>;
         };
         forms: {
@@ -1562,6 +1625,17 @@ declare module 'superdesk-api' {
             stripHtmlTags(htmlString: string): string;
             getLinesCount(plainText: string): number | null;
             downloadBlob(data: BinaryType, mimetype: string, filename: string): void;
+
+            /**
+             * When throttled function is called more frequently than specified via `wait` param,
+             * it stores the arrays in memory and after the wait times out
+             * it then invokes the handler function with all stored values.
+             */
+            throttleAndCombineArray<T>(
+                fn: IHandler<Array<T>>,
+                wait: number,
+                options?: ThrottleSettings,
+            );
         };
         addWebsocketMessageListener<T extends string>(
             eventName: T,
@@ -1572,6 +1646,7 @@ declare module 'superdesk-api' {
         ): () => void; // returns a function to remove event listener
         addEventListener<T extends keyof IEvents>(eventName: T, fn: (arg: IEvents[T]) => void): void;
         removeEventListener<T extends keyof IEvents>(eventName: T, fn: (arg: IEvents[T]) => void): void;
+        dispatchEvent<T extends keyof IEvents>(eventName: T, payload: IEvents[T]): void;
     }>;
 
     export interface IAuthorsFieldOptions {
@@ -1642,6 +1717,9 @@ declare module 'superdesk-api' {
         },
 
         // FROM CLIENT
+
+        importApps: Array<string>; // paths are relative to client/dist
+
         server: {
             url: string;
             ws: any;
@@ -1816,13 +1894,29 @@ declare module 'superdesk-api' {
         userOnlineMinutes: number;
 
         iMatricsFields: {
-            [key: string]: {
-                name: string;
-                order: number;
-            };
+            entities: {
+                [key: string]: {
+                    name: string;
+                    order: number;
+                };
+            },
+            others: {
+                [key: string]: {
+                    name: string;
+                    order: number;
+                };
+            }
         };
     }
 
+    export interface ITemplate extends IBaseRestApiResponse {
+        template_name: string,
+        is_public: boolean,
+        data: IArticle,
+        template_type: string,
+        template_desks: Array<IDesk['_id']>,
+        user: IUser['_id']
+    }
 
     // CUSTOM FIELD TYPES
 
@@ -1832,6 +1926,15 @@ declare module 'superdesk-api' {
         setValue: (value: IValue) => void;
         readOnly: boolean;
         config: IConfig;
+    }
+
+    export interface ITemplateEditorComponentProps<IValue, IConfig> {
+        item: IArticle;
+        value: IValue;
+        setValue: (value: IValue) => void;
+        readOnly: boolean;
+        config: IConfig;
+        template?: ITemplate;
     }
 
     export interface IPreviewComponentProps {
@@ -1851,6 +1954,7 @@ declare module 'superdesk-api' {
         editorComponent: React.ComponentType<IEditorComponentProps<IConfig>>;
         previewComponent: React.ComponentType<IPreviewComponentProps>;
         configComponent?: React.ComponentType<IConfigComponentProps<IConfig>>;
+        templateEditorComponent?: React.ComponentType<ITemplateEditorComponentProps<IConfig>>;
     }
 
 
