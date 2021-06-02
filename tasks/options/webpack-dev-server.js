@@ -7,6 +7,9 @@ module.exports = function(grunt) {
     return {
         options: {
             webpack: webpackConfig,
+            watchOptions: {
+                ignored: /node_modules/,
+            },
             contentBase: [
                 path.join(process.cwd(), 'dist'),
                 path.dirname(path.dirname(__dirname)),
