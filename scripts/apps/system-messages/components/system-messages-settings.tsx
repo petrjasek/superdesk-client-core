@@ -10,7 +10,7 @@ import {getGenericListPageComponent} from 'core/ui/components/ListPage/generic-l
 import {IFormGroup, IGenericListPageComponent} from 'superdesk-api';
 import {Label} from 'superdesk-ui-framework/react/components/Label';
 import {assertNever} from 'core/helpers/typescript-helpers';
-import {ISystemMessage} from '..';
+import {ISystemMessage, RESOURCE} from '..';
 
 
 
@@ -113,7 +113,7 @@ export class SystemMessagesSettingsComponent extends React.PureComponent {
             </ListItem>
         );
 
-        const ListComponent = getGenericListPageComponent<ISystemMessage>('system_message', formConfig);
+        const ListComponent = getGenericListPageComponent<ISystemMessage>(RESOURCE, formConfig);
 
         return (
             <SettingsPage title={gettext('System Messages')}>

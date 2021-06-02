@@ -3,7 +3,7 @@ import {coreMenuGroups} from 'core/activity/activity';
 import {reactToAngular1} from 'superdesk-ui-framework';
 import {SystemMessagesSettingsComponent} from './components/system-messages-settings';
 import {SystemMessagesComponent} from './components/system-messages';
-import { IBaseRestApiResponse, IUser } from 'superdesk-api';
+import {IBaseRestApiResponse, IUser} from 'superdesk-api';
 
 export interface ISystemMessage extends IBaseRestApiResponse {
     type: 'warning' | 'alert' | 'primary' | 'success';
@@ -12,6 +12,8 @@ export interface ISystemMessage extends IBaseRestApiResponse {
     message: string;
     user_id: IUser['_id'];
 }
+
+export const RESOURCE = 'system_messages';
 
 angular.module('superdesk.apps.system-messages', [
     'superdesk.core.activity',
@@ -35,5 +37,6 @@ angular.module('superdesk.apps.system-messages', [
             category: superdesk.MENU_SETTINGS,
             settings_menu_group: coreMenuGroups.CONTENT_CONFIG,
             priority: 5000,
+            privileges: {[RESOURCE]: 1},
         });
     }]);
