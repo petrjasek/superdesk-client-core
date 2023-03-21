@@ -731,6 +731,7 @@ export function getAutoTaggingComponent(superdesk: ISuperdesk, label: string) {
                                                 <ImageTagging
                                                     data={data.changes.analysis}
                                                     article={this.props.article}
+                                                    superdesk={superdesk}
                                                 />
                                             )}
                                         </div>

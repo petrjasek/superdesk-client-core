@@ -1,6 +1,5 @@
 import * as React from 'react';
-import {superdesk} from '../superdesk';
-import {IArticle} from 'superdesk-api';
+import {IArticle, ISuperdesk} from 'superdesk-api';
 import {ITagUi} from '../types';
 import {OrderedMap} from 'immutable';
 import {IServerResponse, ITagBase, toServerFormat} from '../adapter';
@@ -35,6 +34,7 @@ interface IProps {
     data: OrderedMap<string, ITagUi>;
     style?: React.CSSProperties;
     article: IArticle;
+    superdesk: ISuperdesk;
 }
 
 interface IState {
@@ -109,6 +109,7 @@ const cardStyle: React.CSSProperties = {
 const prepareForDropping = (
     event: React.DragEvent<HTMLDivElement>,
     image: IImage | null,
+    superdesk: ISuperdesk,
 ) => {
     if (image == null) {
         return;
@@ -152,9 +153,6 @@ const prepareForDropping = (
     );
 };
 
-const {httpRequestJsonLocal} = superdesk;
-const {gettext} = superdesk.localization;
-
 export class ImageTagging extends React.PureComponent<IProps, IState> {
     private abortController: AbortController;
     private debouncedFetch;
@@ -193,7 +191,7 @@ export class ImageTagging extends React.PureComponent<IProps, IState> {
 
     runFetchImages() {
         const formattedTags: Array<ITagInput> = this.formatTags(
-            toServerFormat(this.props.data, superdesk),
+            toServerFormat(this.props.data, this.props.superdesk),
         );
 
         if ((formattedTags?.length ?? 0) < 1) {
@@ -206,7 +204,7 @@ export class ImageTagging extends React.PureComponent<IProps, IState> {
         }
 
         this.setState({isLoading: true}, () => {
-            httpRequestJsonLocal<IImageServerResponse>({
+            this.props.superdesk.httpRequestJsonLocal<IImageServerResponse>({
                 abortSignal: this.abortController.signal,
                 method: 'POST',
                 path: '/ai_image_suggestions/',
@@ -222,7 +220,7 @@ export class ImageTagging extends React.PureComponent<IProps, IState> {
                     });
                 })
                 .catch(() => {
-                    superdesk.ui.alert('Failed to fetch image suggestions. Please, try again!');
+                    this.props.superdesk.ui.alert('Failed to fetch image suggestions. Please, try again!');
                 })
                 .finally(() => this.setState({isLoading: false}));
         });
@@ -268,6 +266,7 @@ export class ImageTagging extends React.PureComponent<IProps, IState> {
     render() {
         const {style} = this.props;
         const {isLoading, selectedImage, images} = this.state;
+        const {gettext} = this.props.superdesk.localization;
 
         return (
             <ToggleBoxNext
@@ -327,7 +326,7 @@ export class ImageTagging extends React.PureComponent<IProps, IState> {
                                                         alt=""
                                                         src={selectedImage.imageUrl}
                                                         onDragStart={(event) =>
-                                                            prepareForDropping(event, selectedImage)
+                                                            prepareForDropping(event, selectedImage, this.props.superdesk)
                                                         }
                                                     />
                                                 </div>
@@ -356,7 +355,7 @@ export class ImageTagging extends React.PureComponent<IProps, IState> {
                                                                 this.handleClickImage(image);
                                                             }}
                                                             onDragStart={(event) =>
-                                                                prepareForDropping(event, image)
+                                                                prepareForDropping(event, image, this.props.superdesk)
                                                             }
                                                         />
                                                     </div>
