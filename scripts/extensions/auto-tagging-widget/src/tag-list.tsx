@@ -49,7 +49,7 @@ export function getTagsListComponent(superdesk: ISuperdesk): React.ComponentType
                             shade={savedTags.has(item.qcode) && !readOnly ?
                                 (isRootNodeWithChildren ? 'highlight2' : 'highlight1') :
                                 (isRootNodeWithChildren ? 'darker' : 'light')}
-                            onClick={
+                            onRemove={
                                 readOnly
                                     ? noop
                                     : () => {

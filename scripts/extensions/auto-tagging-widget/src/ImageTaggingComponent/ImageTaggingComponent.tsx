@@ -4,7 +4,7 @@ import {IArticle} from 'superdesk-api';
 import {ITagUi} from '../types';
 import {OrderedMap} from 'immutable';
 import {IServerResponse, ITagBase, toServerFormat} from '../adapter';
-import {ToggleBox, IconButton, Popover} from 'superdesk-ui-framework/react';
+import {IconButton, Popover, ToggleBoxNext} from 'superdesk-ui-framework/react';
 import {debounce, noop} from 'lodash';
 
 interface ITagInput {
@@ -270,7 +270,7 @@ export class ImageTagging extends React.PureComponent<IProps, IState> {
         const {isLoading, selectedImage, images} = this.state;
 
         return (
-            <ToggleBox
+            <ToggleBoxNext
                 className="toggle-box--circle"
                 title={
                     isLoading
@@ -369,7 +369,7 @@ export class ImageTagging extends React.PureComponent<IProps, IState> {
                         }
                     })()}
                 </div>
-            </ToggleBox>
+            </ToggleBoxNext>
         );
     }
 }
