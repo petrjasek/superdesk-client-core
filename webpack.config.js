@@ -1,7 +1,6 @@
 var path = require('path');
 var webpack = require('webpack');
 var lodash = require('lodash');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 function getModuleDir(moduleName) {
     return path.join(
@@ -61,9 +60,6 @@ module.exports = function makeConfig(grunt) {
             }),
             new webpack.DefinePlugin({
                 __SUPERDESK_CONFIG__: JSON.stringify(sdConfig),
-            }),
-            new ExtractTextPlugin({
-                filename: '[name].bundle.css',
             }),
         ],
 
@@ -153,28 +149,21 @@ module.exports = function makeConfig(grunt) {
                 },
                 {
                     test: /\.(css|scss)$/i,
-                    use: ExtractTextPlugin.extract({
-                        fallback: [{
-                            loader: 'style-loader',
+                    use: [
+                        {loader: 'style-loader'},
+                        {
+                            loader: 'css-loader',
                             options: {
                                 sourceMap: true,
                             },
-                        }],
-                        use: [
-                            {
-                                loader: 'css-loader',
-                                options: {
-                                    sourceMap: true,
-                                },
+                        },
+                        {
+                            loader: 'sass-loader',
+                            options: {
+                                sourceMap: true,
                             },
-                            {
-                                loader: 'sass-loader',
-                                options: {
-                                    sourceMap: true,
-                                },
-                            },
-                        ],
-                    }),
+                        },
+                    ],
                 },
                 {
                     test: /\.json$/,
@@ -185,6 +174,12 @@ module.exports = function makeConfig(grunt) {
                     loader: 'file-loader',
                 },
             ],
+        },
+
+        devServer: {
+            compress: true,
+            host: '0.0.0.0',
+            port: 9000,
         },
     };
 };
