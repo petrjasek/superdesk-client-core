@@ -13,7 +13,7 @@ Widget.$inject = ['asset', '$modal'];
  */
 export function Widget(asset, $modal) {
     return {
-        templateUrl: asset.templateUrl('apps/dashboard/views/widget.html'),
+        templateUrl: 'scripts/apps/dashboard/views/widget.html',
         restrict: 'A',
         replace: true,
         transclude: true,

@@ -43,7 +43,7 @@ export function MultiActionBar(
     archiveService,
 ) {
     return {
-        templateUrl: asset.templateUrl('apps/search/views/multi-action-bar.html'),
+        templateUrl: 'scripts/apps/search/views/multi-action-bar.html',
         scope: true,
         link: function(scope: IScope) {
             const getSelectedItems = () => multi.getItems();

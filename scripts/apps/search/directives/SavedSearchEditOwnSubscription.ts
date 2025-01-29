@@ -25,7 +25,7 @@ export function SavedSearchEditOwnSubscription(asset, session, api) {
             savedSearch: '=',
             cancelEditingSubscription: '=',
         },
-        templateUrl: asset.templateUrl('apps/search/views/saved-search-subscribe.html'),
+        templateUrl: 'scripts/apps/search/views/saved-search-subscribe.html',
         link: function(scope: IScope) {
             scope.closeModal = () => {
                 scope.cancelEditingSubscription();

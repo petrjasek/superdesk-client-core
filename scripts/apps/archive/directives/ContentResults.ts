@@ -25,7 +25,7 @@ export function ContentResults($location, preferencesService, packages: IPackage
 
     return {
         require: '^sdSearchContainer',
-        templateUrl: asset.templateUrl('apps/search/views/search-results.html'),
+        templateUrl: 'scripts/apps/search/views/search-results.html',
         link: function(scope, elem, attr, controller) {
             var GRID_VIEW = 'mgrid',
                 LIST_VIEW = 'compact';

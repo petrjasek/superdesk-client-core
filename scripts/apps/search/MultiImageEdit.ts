@@ -337,7 +337,7 @@ export function MultiImageEditDirective(asset, $sce) {
             'select-desk': '?sdMultiEditSelectDesk',
         },
         controller: MultiImageEditController,
-        templateUrl: asset.templateUrl('apps/search/views/multi-image-edit.html'),
+        templateUrl: 'scripts/apps/search/views/multi-image-edit.html',
         link: function(scope) {
             scope.trustAsHtml = $sce.trustAsHtml;
             scope.metadataDirty = false;

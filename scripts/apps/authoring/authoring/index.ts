@@ -81,7 +81,6 @@ angular.module('superdesk.apps.authoring', [
     'superdesk.apps.authoring.autosave',
     'superdesk.apps.authoring.suggest',
     'superdesk.apps.desks',
-    'superdesk.apps.notification',
     'superdesk.apps.vocabularies',
     'superdesk.apps.relations',
     'contenteditable',

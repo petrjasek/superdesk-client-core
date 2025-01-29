@@ -21,6 +21,7 @@ angular.module('superdesk.apps.workspace.menu', [])
 angular.module('superdesk.apps.workspace', [
     'superdesk.apps.workspace.content',
     'superdesk.apps.workspace.menu',
+    'superdesk.apps.notification',
 ])
     .service('workspaces', WorkspaceService)
 

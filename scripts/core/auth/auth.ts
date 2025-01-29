@@ -11,7 +11,7 @@ export const SESSION_EVENTS = {
 
 const {fetch: originalFetch} = window;
 
-window.fetch = (...args) => {
+window.fetch2 = (...args) => {
     const [resource, config] = args;
 
     /**
@@ -191,13 +191,13 @@ export default angular.module('superdesk.core.auth', [
         superdesk
             .activity('/reset-password/', {
                 controller: ResetPassworController,
-                templateUrl: asset.templateUrl('core/auth/reset-password.html'),
+                templateUrl: 'scripts/core/auth/reset-password.html',
                 auth: false,
             });
         superdesk
             .activity('/secure-login/', {
                 controller: SecureLoginController,
-                templateUrl: asset.templateUrl('core/auth/secure-login.html'),
+                templateUrl: 'scripts/core/auth/secure-login.html',
                 auth: false,
             });
     }])

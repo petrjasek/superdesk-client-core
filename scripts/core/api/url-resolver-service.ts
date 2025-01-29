@@ -15,6 +15,8 @@ function URLResolver($http, $q, $log) {
     this.resource = function(resource) {
         return this.links().then(() => {
             if (_links[resource]) {
+
+                console.info("RESOURCE", resource, _links[resource]);
                 return _links[resource];
             }
 
@@ -30,6 +32,7 @@ function URLResolver($http, $q, $log) {
      * @returns {String}
      */
     this.item = function(item) {
+        console.info("ITEM", item, basejoin(item));
         return basejoin(item);
     };
 

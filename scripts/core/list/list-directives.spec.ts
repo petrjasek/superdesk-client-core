@@ -2,6 +2,7 @@
 describe('list directives', () => {
     beforeEach(window.module('superdesk.core.list'));
     beforeEach(window.module('superdesk.templates-cache'));
+
     beforeEach(window.module(($provide) => {
         $provide.provider('translateFilter', function() {
             this.$get = function() {

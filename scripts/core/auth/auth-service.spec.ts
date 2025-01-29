@@ -1,17 +1,5 @@
-import {appConfig} from 'appConfig';
-import {ISuperdeskGlobalConfig} from 'superdesk-api';
-
 describe('auth service', () => {
     beforeEach(() => {
-        const testConfig: Partial<ISuperdeskGlobalConfig> = {
-            server: {
-                url: '',
-                ws: undefined,
-            },
-        };
-
-        Object.assign(appConfig, testConfig);
-
         window.module('superdesk.core.preferences');
         window.module('superdesk.core.services.storage');
         window.module('superdesk.core.auth');
@@ -24,9 +12,12 @@ describe('auth service', () => {
 
     beforeEach(inject((session, preferencesService, authAdapter, urls, api, $q) => {
         spyOn(preferencesService, 'get').and.returnValue($q.when({}));
-        spyOn(urls, 'resource').and.returnValue($q.when('http://localhost:5000/api/auth'));
         spyOn(session, 'start').and.returnValue(true);
         spyOn(api.users, 'getById').and.returnValue($q.when({username: 'foo'}));
+    }));
+
+    afterEach(inject(($httpBackend) => {
+        $httpBackend.verifyNoOutstandingExpectation();
     }));
 
     it('can login', (done) => inject((auth, session, $httpBackend, $rootScope) => {
@@ -44,8 +35,6 @@ describe('auth service', () => {
         $rootScope.$apply();
         $httpBackend.flush();
         $rootScope.$apply();
-
-        $httpBackend.verifyNoOutstandingExpectation();
     }));
 
     it('checks credentials', (done) => inject((auth, $httpBackend, $rootScope) => {

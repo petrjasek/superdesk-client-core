@@ -1,26 +1,25 @@
 import ng from 'core/services/ng';
-
-beforeEach(window.module(($provide) => {
-    $provide.constant('lodash', window._);
-}));
-
-beforeEach(window.module('superdesk.mocks'));
-beforeEach(window.module('superdesk.core.auth.session'));
-beforeEach(window.module('superdesk.core.services.storage'));
+import {mockDataApi} from './mockDataApi';
 
 /**
  * Mock services that call server on init and thus would require mocking all the time
  */
 angular.module('superdesk.mocks', [])
     .config(['$qProvider', ($qProvider) => $qProvider.errorOnUnhandledRejections(false)])
-    .run(['$httpBackend', ($httpBackend) => {
-        // mock call to /api which is used in a few service factories
-        $httpBackend.whenGET(/api$/).respond({_links: {child: []}});
-    }])
     .run(['$injector', ng.register])
+    .run(['$httpBackend', ($httpBackend) => {
+        $httpBackend.whenGET('http://localhost:5000/api').respond(200, {
+            _links: {child: [
+                {title: 'auth', href: 'auth'},
+                {title: 'auth_db', href: 'auth_db'},
+                {title: 'users', href: 'users'},
+                {title: 'workspace', href: 'users/<regex():user_id>/workspace'},
+            ]},
+        });
+    }])
     .constant('config', {
-        server: {url: ''},
         editor: {},
+        server: {url: 'http://localhost:5000/api', ws: ''},
         model: {
             dateformat: 'DD/MM/YYYY',
             timeformat: 'HH:mm:ss',
@@ -57,3 +56,13 @@ angular.module('superdesk.mocks', [])
             return $q.when(false);
         };
     });
+
+beforeEach(window.module(($provide) => {
+    $provide.constant('lodash', window._);
+}));
+
+beforeEach(window.module('superdesk.mocks'));
+beforeEach(window.module('superdesk.core.auth.session'));
+beforeEach(window.module('superdesk.core.services.storage'));
+
+beforeAll(mockDataApi);

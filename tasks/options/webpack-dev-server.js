@@ -8,9 +8,7 @@ module.exports = function(grunt) {
         options: {
         },
 
-        start: {
-            mode: 'development',
-        },
+        start: Object.assign({mode: 'development'}, webpackConfig),
 
         'ui-guide': {
             keepAlive: true,

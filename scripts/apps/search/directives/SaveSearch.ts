@@ -9,7 +9,7 @@ SaveSearch.$inject = ['$location', 'asset', 'api', 'notify', '$rootScope'];
  */
 export function SaveSearch($location, asset, api, notify, $rootScope) {
     return {
-        templateUrl: asset.templateUrl('apps/search/views/save-search.html'),
+        templateUrl: 'scripts/apps/search/views/save-search.html',
         link: function(scope, _elem) {
             scope.edit = null;
             scope.activateSearchPane = false;

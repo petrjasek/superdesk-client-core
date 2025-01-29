@@ -10,12 +10,10 @@ describe('superdesk.apps.workspace.content', () => {
     beforeEach(window.module('superdesk.apps.authoring.metadata'));
 
     describe('content service', () => {
-        var done;
         var ITEM = {};
 
         beforeEach(inject((api, $q, preferencesService) => {
             spyOn(api, 'save').and.returnValue($q.when(ITEM));
-            done = jasmine.createSpy('done');
             spyOn(preferencesService, 'update').and.returnValue(true);
         }));
 

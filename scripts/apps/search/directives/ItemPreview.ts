@@ -37,7 +37,7 @@ export function ItemPreview(asset, storage, desks, _, familyService, privileges)
     }
 
     return {
-        templateUrl: asset.templateUrl('apps/search/views/item-preview.html'),
+        templateUrl: 'scripts/apps/search/views/item-preview.html',
         scope: {
             item: '=',
             close: '&',

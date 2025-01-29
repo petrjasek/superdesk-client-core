@@ -108,7 +108,7 @@ angular.module('superdesk.apps.search', [
                 description: gettext('Find live and archived content'),
                 priority: 200,
                 label: gettext('Search'),
-                templateUrl: asset.templateUrl('apps/search/views/search.html'),
+                templateUrl: 'scripts/apps/search/views/search.html',
                 sideTemplateUrl: 'scripts/apps/workspace/views/workspace-sidenav.html',
                 controller: SearchController,
                 controllerAs: 'search',
@@ -118,7 +118,7 @@ angular.module('superdesk.apps.search', [
                 if: 'privileges.use_global_saved_searches',
                 href: '/search',
                 label: gettext('Search'),
-                templateUrl: asset.templateUrl('apps/search/views/menu.html'),
+                templateUrl: 'scripts/apps/search/views/menu.html',
                 order: 800,
                 group: 'personal',
             });
@@ -127,7 +127,7 @@ angular.module('superdesk.apps.search', [
                 if: '!privileges.use_global_saved_searches',
                 href: '/search',
                 label: gettext('Search'),
-                templateUrl: asset.templateUrl('apps/search/views/menu-providers.html'),
+                templateUrl: 'scripts/apps/search/views/menu-providers.html',
                 order: 800,
                 group: 'personal',
             });

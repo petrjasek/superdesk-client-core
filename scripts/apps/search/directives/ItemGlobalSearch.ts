@@ -13,7 +13,7 @@ export function ItemGlobalSearch(
 ) {
     return {
         scope: {repo: '=', context: '='},
-        templateUrl: asset.templateUrl('apps/search/views/item-globalsearch.html'),
+        templateUrl: 'scripts/apps/search/views/item-globalsearch.html',
         link: function(scope, elem) {
             var ENTER = 13;
             var ESC = 27;

@@ -13,7 +13,6 @@ describe('superdesk ui', () => {
                 dateformat: 'MM/DD/YYYY',
             },
             default_timezone: 'Europe/London',
-            server: {url: undefined, ws: undefined},
         };
 
         Object.assign(appConfig, testConfig);

@@ -21,7 +21,6 @@ describe('legal archive service', () => {
                 dateformat: 'MM/DD/YYYY',
             },
             default_timezone: 'UTC',
-            server: {url: undefined, ws: undefined},
         };
 
         Object.assign(appConfig, testConfig);

@@ -14,9 +14,14 @@ export default angular.module('superdesk.core.services.asset', [])
         this.templateUrl = function(path) {
             var ret = path;
 
+            if (path.startsWith('core/') || path.startsWith('apps/')) {
+                return 'scripts/' + path;
+            }
+
             if (!/^(https?:\/\/|\/\/|\/|.\/|..\/)/.test(path)) {
                 ret = 'scripts/' + ret;
             }
+
             if (!/^(https?:\/\/|\/\/)/.test(path) && appConfig.paths != null && appConfig.paths.superdesk) {
                 ret = appConfig.paths.superdesk + ret;
             }
@@ -25,6 +30,7 @@ export default angular.module('superdesk.core.services.asset', [])
             ret = ret.replace(/[^\/]+\/+\.\.\//g, '')
                 .replace(/\.\//g, '')
                 .replace(/(\w)\/\/(\w)/g, '$1/$2');
+            
             return ret;
         };
 

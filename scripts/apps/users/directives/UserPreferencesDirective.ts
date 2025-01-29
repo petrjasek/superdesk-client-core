@@ -41,7 +41,7 @@ export function UserPreferencesDirective(
     };
 
     return {
-        templateUrl: asset.templateUrl('apps/users/views/user-preferences.html'),
+        templateUrl: 'scripts/apps/users/views/user-preferences.html',
         link: function(scope, element, attrs) {
             const userLang = getUserInterfaceLanguage().replace('_', '-');
             const body = angular.element('body');

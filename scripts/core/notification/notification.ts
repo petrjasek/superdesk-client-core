@@ -336,7 +336,11 @@ function ReloadService($window, $rootScope, session, desks, superdeskFlags) {
  * @packageName superdesk.core
  * @description The notification package holds various types of notifications.
  */
-export default angular.module('superdesk.apps.notification', ['superdesk.apps.desks', 'superdesk.core.menu'])
+export default angular.module('superdesk.apps.notification', [
+    'superdesk.core.auth',
+    'superdesk.core.menu',
+    'superdesk.apps.desks',
+])
     .service('reloadService', ReloadService)
     .service('notifyConnectionService', NotifyConnectionService)
     .run(WebSocketProxy);

@@ -3,9 +3,6 @@ describe('templates', () => {
     beforeEach(window.module('superdesk.apps.templates'));
     beforeEach(window.module('superdesk.templates-cache'));
     beforeEach(window.module('superdesk.apps.searchProviders'));
-    beforeEach(inject(($httpBackend) => {
-        $httpBackend.whenGET(/api$/).respond({_links: {child: []}});
-    }));
 
     describe('templates widget', () => {
         var existingTemplate = {template_name: 'template1', template_desks: ['sports'], is_public: true, user: 'foo'};

@@ -8,12 +8,14 @@ module.exports = function(config) {
     var webpackConfig = makeConfig(grunt);
 
     // in karma, entry is read from files prop
-    webpackConfig.entry = null;
-    webpackConfig.devtool = 'eval';
+    webpackConfig.entry = undefined;
+    webpackConfig.output = undefined;
     webpackConfig.mode = 'development';
+    webpackConfig.devtool = 'inline-source-map';
 
     config.set({
         frameworks: [
+            'webpack',
             'jasmine',
         ],
 
@@ -23,7 +25,7 @@ module.exports = function(config) {
             'karma-ng-html2js-preprocessor',
             'karma-sourcemap-loader',
             'karma-webpack',
-            'karma-spec-reporter',
+            //'karma-spec-reporter',
         ],
 
         preprocessors: {
@@ -36,18 +38,14 @@ module.exports = function(config) {
         webpackMiddleware: {
             chunks: false,
             modules: false,
-            stats: false,
+            stats: 'errors-only',
             debug: false,
             progress: false,
-            // quiet: true
-            watchOptions: {
-                ignored: path.join(__dirname, 'scripts', 'extensions'),
-            },
         },
 
         files: [
-            'scripts/tests.ts',
-            'scripts/**/*.html',
+            {pattern: 'scripts/tests.ts', watched: false},
+            {pattern: 'scripts/**/*.html', watched: false},
         ],
 
         ngHtml2JsPreprocessor: {
@@ -66,7 +64,7 @@ module.exports = function(config) {
         runnerPort: 9100,
 
         // enable / disable watching file and executing tests whenever any file changes
-        autoWatch: true,
+        //autoWatch: true,
 
         // Start these browsers, currently available:
         browsers: ['ChromeHeadless'],

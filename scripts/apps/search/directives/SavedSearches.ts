@@ -39,7 +39,7 @@ interface ISavedSearchesScope extends ng.IScope {
 export function SavedSearches($rootScope, api, session, modal, notify, asset, $location,
     desks, privileges, savedSearch): ng.IDirective {
     return {
-        templateUrl: asset.templateUrl('apps/search/views/saved-searches.html'),
+        templateUrl: 'scripts/apps/search/views/saved-searches.html',
         scope: {},
         link: function(scope: ISavedSearchesScope) {
             const resource = api('saved_searches');

@@ -40,7 +40,7 @@ export function SearchPanel($location,
     desks.initialize();
     return {
         require: '^sdSearchContainer',
-        templateUrl: asset.templateUrl('apps/search/views/search-panel.html'),
+        templateUrl: 'scripts/apps/search/views/search-panel.html',
         scope: {
             items: '=',
             desk: '=',

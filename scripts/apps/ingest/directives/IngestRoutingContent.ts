@@ -256,6 +256,8 @@ export function IngestRoutingContent(api, notify, modal, contentFilters, $filter
 
                 sdApi.ingest.getRuleHandlers().then((handlers) => {
                     scope.ruleHandlers = handlers;
+                }, () => {
+                    scope.ruleHandler = [];
                 });
             }
         },

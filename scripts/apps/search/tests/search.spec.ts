@@ -275,7 +275,6 @@ describe('sdSearchPanel directive', () => {
                 timeformat: 'HH:mm',
                 dateformat: 'MM/DD/YYYY',
             },
-            server: {url: undefined, ws: undefined},
         };
 
         Object.assign(appConfig, testConfig);

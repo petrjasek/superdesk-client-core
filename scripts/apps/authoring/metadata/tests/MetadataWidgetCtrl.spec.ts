@@ -8,6 +8,7 @@ describe('MetadataWidgetCtrl controller', () => {
         prefsGet, // deferred result of the preferences service's get() method
         scope;
 
+    beforeEach(window.module('superdesk.mocks'));
     beforeEach(window.module('superdesk.apps.publish'));
     beforeEach(window.module('superdesk.apps.desks'));
     beforeEach(window.module('superdesk.core.ui'));
@@ -27,7 +28,6 @@ describe('MetadataWidgetCtrl controller', () => {
                 dateformat: 'MM/DD/YYYY',
             },
             default_timezone: 'Europe/London',
-            server: {url: undefined, ws: undefined},
         };
 
         Object.assign(appConfig, testConfig);

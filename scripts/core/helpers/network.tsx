@@ -38,7 +38,12 @@ export function isHttpApiError(x): x is IHttpLocalApiErrorResponse {
 function httpRequestBase(options: IHttpRequestOptions): Promise<Response> {
     const {method, url, payload, headers, abortSignal} = options;
 
-    const _url = new URL(url);
+    try {
+        const _url = new URL(url);
+    } catch (e) {
+        console.error("INVALID URL", url);
+        return Promise.reject(new Response(null, {status: 400, statusText: 'Invalid URL'}));
+    }
 
     if (options.urlParams != null) {
         Object.keys(options.urlParams).forEach((key) => {
@@ -53,6 +58,8 @@ function httpRequestBase(options: IHttpRequestOptions): Promise<Response> {
             }
         });
     }
+
+    console.info("FETCH", _url);
 
     return fetch(_url.toString(), {
         method,
@@ -105,13 +112,14 @@ export function httpRequestJsonLocal<T>(options: IHttpRequestJsonOptionsLocal): 
                     'Content-Type': 'application/json',
                     'Authorization': session.token,
                 },
-            }).then((res) => res.json().then((json) => {
+            }).then((res) => {
                 if (res.ok) {
-                    return json;
+                    return res.json();
                 } else {
-                    return Promise.reject(json);
+                    console.error("Error fetching " + options.path, res);
+                    return Promise.reject({});
                 }
-            }));
+            });
         });
 }
 

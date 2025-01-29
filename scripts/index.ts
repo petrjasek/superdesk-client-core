@@ -3,6 +3,7 @@
 // if you need some styles to go at the top/bottom, import it here
 
 import 'app.scss'; // styles
+import 'superdesk-ui-framework';
 
 import 'jquery-jcrop/css/jquery.Jcrop.css';
 import 'jquery-ui/themes/smoothness/jquery-ui.css';

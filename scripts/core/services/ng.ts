@@ -43,7 +43,12 @@ export default new class ProviderService {
         return new Promise((resolve, reject) => {
             this.waitForServicesToBeAvailable()
                 .then(() => {
-                    resolve(names.map((name) => $injector.get(name)));
+                    try {
+                        resolve(names.map((name) => $injector.get(name)));
+                    } catch (e) {
+                        console.error("E", e, names);
+                        reject(e);
+                    }
                 });
         });
     }

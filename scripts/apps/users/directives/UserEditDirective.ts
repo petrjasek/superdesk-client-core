@@ -13,7 +13,7 @@ export function UserEditDirective(api, notify, usersService, userList, session, 
     langmap, $location, $route, superdesk, features, asset, privileges, desks, keyboardManager,
     gettextCatalog, metadata, modal, $q) {
     return {
-        templateUrl: asset.templateUrl('apps/users/views/edit-form.html'),
+        templateUrl: 'scripts/apps/users/views/edit-form.html',
         scope: {
             origUser: '=user',
             onsave: '&',

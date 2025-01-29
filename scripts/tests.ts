@@ -1,8 +1,8 @@
 import 'vendor';
 import 'angular-mocks';
 import 'core';
-import 'core/tests/mocks';
 import 'apps';
+import 'core/tests/mocks';
 
 import Enzyme from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
@@ -12,14 +12,8 @@ window.translations = DEFAULT_ENGLISH_TRANSLATIONS;
 
 Enzyme.configure({adapter: new Adapter()});
 
-var testsContext = require.context('scripts', true, /.spec.(ts|tsx)$/);
+const importAll = (r) => r.keys().map(r);
 
-testsContext.keys().filter((path) => {
-    /*
-        Excluding anything from extensions because:
-        1. Extensions contain dependencies in node_modules directories
-            which contain their own tests which we don't want to run.
-        2. It's probably better if extensions run units test on their own.
-    */
-    return path.startsWith('./extensions/') === false;
-}).forEach(testsContext);
+// avoid importing scripts due to extensions
+importAll(require.context('scripts/core', true, /.[Ss]pec.(ts|tsx)$/));
+importAll(require.context('scripts/apps', true, /.[Ss]pec.(ts|tsx)$/));

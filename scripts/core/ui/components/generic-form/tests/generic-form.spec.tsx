@@ -5,7 +5,6 @@ import {getFormFieldComponent} from '../form-field';
 import {assertNever} from 'core/helpers/typescript-helpers';
 import {IFormField} from 'superdesk-api';
 import {FormFieldType} from '../interfaces/form';
-import {mockDataApi} from 'core/tests/mockDataApi';
 
 function getAllInputTypes(): Array<FormFieldType> {
     return Object.keys(FormFieldType).map((key) => FormFieldType[key]);
@@ -59,7 +58,6 @@ function getTestFieldConfig(type: FormFieldType): IFormField {
 describe('generic form', () => {
     const message = 'error-q7w8e9r';
 
-    beforeEach(mockDataApi);
     beforeEach(window.module('superdesk.apps.desks'));
 
     getAllInputTypes()

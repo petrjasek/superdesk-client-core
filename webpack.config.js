@@ -154,20 +154,14 @@ module.exports = function makeConfig(grunt) {
                         {
                             loader: 'css-loader',
                             options: {
-                                sourceMap: true,
                             },
                         },
                         {
                             loader: 'sass-loader',
                             options: {
-                                sourceMap: true,
                             },
                         },
                     ],
-                },
-                {
-                    test: /\.json$/,
-                    use: ['json-loader'],
                 },
                 {
                     test: /\.(png|gif|jpeg|jpg|woff|woff2|eot|ttf|svg)(\?.*$|$)/,

@@ -24,7 +24,6 @@ describe('Content API Search', () => {
                 useDefaultTimezone: true,
             },
             default_timezone: 'UTC',
-            server: {url: undefined, ws: undefined},
         };
 
         Object.assign(appConfig, testConfig);

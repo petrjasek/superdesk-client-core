@@ -8,7 +8,6 @@ describe('renditions service', () => {
     beforeEach(() => {
         const testConfig: Partial<ISuperdeskGlobalConfig> = {
             features: {editFeaturedImage: true},
-            server: {url: '', ws: undefined},
         };
 
         Object.assign(appConfig, testConfig);

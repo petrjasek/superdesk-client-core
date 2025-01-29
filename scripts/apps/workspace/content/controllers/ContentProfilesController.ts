@@ -171,6 +171,9 @@ export function ContentProfilesController($scope: IScope, $location, notify, con
             }));
 
             $scope.$applyAsync();
+        }, (err) => {
+            console.error(err);
+            notify.error(gettext('Failed to load content profile types.'));
         });
     }
 

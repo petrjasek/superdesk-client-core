@@ -63,7 +63,7 @@ export function SavedSearchManageSubscribers(asset, userList, api, modal, desks)
             setIsManagingSubscriptions: '=',
             onSubscriptionsChange: '=',
         },
-        templateUrl: asset.templateUrl('apps/search/views/saved-search-manage-subscribers.html'),
+        templateUrl: 'scripts/apps/search/views/saved-search-manage-subscribers.html',
         link: function(scope: IScope) {
             const getDefaults = (): IModel => ({
                 userSubscribers: [],
