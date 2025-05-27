@@ -20,11 +20,27 @@ jobs:
         cache: 'npm'
 
     - run: npm install # needed while we support v14
-
     - run: npm run test
-
       env:
         TZ: "Europe/Prague"
+
+  verify-client-api-changes:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['14', '20', '22']
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - run: npm install # needed while we support v14
+    - run: npm run verify-client-api-changes
 
   e2e:
     runs-on: ubuntu-latest
