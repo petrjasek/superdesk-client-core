@@ -56,7 +56,6 @@
     "angular-vs-repeat": "1.1.7",
     "bootstrap": "3.3.7",
     "classnames": "2.2.5",
-    "css-loader": "^5.2.7",
     "csstype": "2.6.17",
     "d3": "3.5.17",
     "date-fns": "^2.16.0",
@@ -65,20 +64,10 @@
     "draft-js-export-html": "1.3.3",
     "eslint": "6.6.0",
     "eslint-plugin-react": "7.16.0",
-    "file-loader": "^6.2.0",
     "gettext.js": "0.9.0",
     "git-rev-sync": "1.10.0",
     "gridster": "github:superdesk/gridster.js#885d0c9",
-    "grunt": "~1.5.0",
-    "grunt-angular-gettext": "2.5.3",
-    "grunt-angular-templates": "1.1.0",
-    "grunt-contrib-clean": "1.1.0",
-    "grunt-contrib-copy": "1.0.0",
-    "grunt-filerev": "2.3.1",
-    "grunt-usemin": "3.1.1",
-    "grunt-webpack": "^5.0.0",
     "hls.js": "0.12.4",
-    "html-loader": "^1.3.2",
     "htmldiff-js": "github:superdesk/htmldiff-js#master",
     "immutable": "3.8.2",
     "jquery": "3.3.1",
@@ -87,8 +76,6 @@
     "json-merge-patch": "0.2.3",
     "json5": "0.5.1",
     "keycloak-js": "10.0.2",
-    "load-grunt-config": "4.0.1",
-    "load-grunt-tasks": "5.1.0",
     "lodash": "4.17.19",
     "memoize-one": "^6.0.0",
     "ment.io": "0.9.23",
@@ -97,7 +84,6 @@
     "moment-timezone": "0.5.41",
     "ng-file-upload": "12.2.13",
     "owl.carousel": "2.2.0",
-    "patch-package": "^7.0.0",
     "popper-max-size-modifier": "0.2.0",
     "postscribe": "2.0.8",
     "prop-types": "15.6.1",
@@ -119,18 +105,11 @@
     "redux": "^4.2.1",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.3.0",
-    "sass": "~1.3.0",
-    "sass-loader": "^10.5.2",
     "shallow-equal": "^3.1.0",
     "shortid": "2.2.8",
     "superdesk-ui-framework": "4.0.55",
-    "ts-loader": "^8.4.0",
-    "typescript": "~4.9.5",
     "uuid": "8.3.1",
-    "web-animations-js": "^2.3.2",
-    "webpack": "^4.47.0",
-    "webpack-cli": "^4.10.0",
-    "webpack-dev-server": "^4.15.2"
+    "web-animations-js": "^2.3.2"
   },
   "devDependencies": {
     "@superdesk/build-tools": "file:build-tools",
@@ -172,5 +151,8 @@
   },
   "volta": {
     "node": "14.21.3"
-  }
+  },
+  "workspaces": [
+    "packages/dependencies"
+  ]
 }
