@@ -132,10 +132,10 @@ module.exports = function makeConfig(grunt) {
                     test: /\.(ts|tsx|js|jsx)$/,
                     include: [
                         path.join(__dirname, 'scripts'),
-                        getModuleDir('superdesk-planning'),
-                        getModuleDir('superdesk-publisher'),
-                        getModuleDir('superdesk-analytics'),
-                        path.join(process.cwd(), 'node_modules', 'date-fns'),
+                        path.resolve('node_modules', 'superdesk-planning'),
+                        path.resolve('node_modules', 'superdesk-publisher'),
+                        path.resolve('node_modules', 'superdesk-analytics'),
+                        path.resolve('node_modules', 'date-fns'),
                     ],
                     loader: 'ts-loader',
                     options: {

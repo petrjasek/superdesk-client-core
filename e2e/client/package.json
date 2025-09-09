@@ -3,6 +3,7 @@
   "dependencies": {
     "superdesk-core": "file:../../",
     "@superdesk/build-tools": "file:../../build-tools",
+    "@superdesk/dependencies": "file:../../packages/dependencies",
     "@superdesk/end-to-end-testing-helpers": "file:../../end-to-end-testing-helpers"
   },
   "devDependencies": {
