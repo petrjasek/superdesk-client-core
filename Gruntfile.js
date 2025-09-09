@@ -1,5 +1,4 @@
 var path = require('path');
-var execSync = require('child_process').execSync;
 
 module.exports = function(grunt) {
     var config = {
@@ -20,12 +19,14 @@ module.exports = function(grunt) {
 
     // Auto-load tasks
     require('load-grunt-tasks')(grunt, {
-        config: path.join(__dirname, 'package'),
+        config: path.join(__dirname, 'packages', 'dependencies', 'package'),
         pattern: [
             'grunt-*',
             '@*/grunt-*',
         ],
     });
+
+    grunt.loadNpmTasks('grunt-karma');
 
     // Auto-load configuration
     require('load-grunt-config')(grunt, {
