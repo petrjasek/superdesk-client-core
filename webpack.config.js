@@ -15,10 +15,6 @@ function getModuleDir(moduleName) {
     );
 }
 
-function countOccurences(_string, substring) {
-    return _string.split(substring).length - 1;
-}
-
 // makeConfig creates a new configuration file based on the passed options.
 module.exports = function makeConfig(grunt) {
     var appConfigPath = path.join(process.cwd(), 'superdesk.config.js');
@@ -95,6 +91,7 @@ module.exports = function makeConfig(grunt) {
                 'jquery-gridster': 'gridster/dist/jquery.gridster.min',
                 'external-apps': path.join(process.cwd(), 'dist', 'app-importer.generated.js'),
                 'shallow-equal': 'shallow-equal/dist/index',
+                'jquery': getModuleDir('jquery'),
 
                 /**
                  * Ensure that react is loaded only once.
@@ -133,22 +130,13 @@ module.exports = function makeConfig(grunt) {
             rules: [
                 {
                     test: /\.(ts|tsx|js|jsx)$/,
-                    exclude: function(absolutePath) {
-                        // don't exclude anything outside node_modules
-                        if (absolutePath.indexOf('node_modules') === -1) {
-                            return false;
-                        }
-
-                        // exclude everything else, unless it's a part of a superdesk app like superdesk-planning
-                        // but is not its dependency.
-                        // For example, `superdesk-planning/node_modules/**/*` will be excluded.
-                        const exclude = !validModules.some(
-                            (app) =>
-                                absolutePath.includes(app) && countOccurences(absolutePath, '/node_modules/') === 1
-                        );
-
-                        return exclude;
-                    },
+                    include: [
+                        path.join(__dirname, 'scripts'),
+                        getModuleDir('superdesk-planning'),
+                        getModuleDir('superdesk-publisher'),
+                        getModuleDir('superdesk-analytics'),
+                        path.join(process.cwd(), 'node_modules', 'date-fns'),
+                    ],
                     loader: 'ts-loader',
                     options: {
                         transpileOnly: true,
