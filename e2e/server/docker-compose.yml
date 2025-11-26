@@ -66,6 +66,10 @@ services:
         volumes:
           - ./dump:/opt/superdesk/dump:rw
         user: 1000:1000
+        depends_on:
+            - redis
+            - mongo
+            - elastic
 
 networks:
     e2e:
