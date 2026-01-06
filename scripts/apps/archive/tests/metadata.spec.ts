@@ -1,4 +1,5 @@
 import {getMetadata} from 'apps/archive/parse-metadata';
+import {dispose} from '@uswriting/exiftool';
 
 const fetchFile = (filename: string): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -23,10 +24,15 @@ const fetchFile = (filename: string): Promise<File> => {
 };
 
 const exiftoolFetchPolyfill = (url: string): Promise<Response> => {
+    // zeroperl-ts fetches "./zeroperl.wasm" in the browser; Karma serves workspace files under /base/.
+    const resolvedUrl = (url === './zeroperl.wasm' || url.endsWith('/zeroperl.wasm'))
+        ? '/zeroperl.wasm'
+        : url;
+
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
-        xhr.open('GET', url);
+        xhr.open('GET', resolvedUrl);
         xhr.responseType = 'arraybuffer';
 
         xhr.onload = () => {
@@ -54,18 +60,25 @@ const exiftoolFetchPolyfill = (url: string): Promise<Response> => {
 };
 
 describe('process item metadata', () => {
+    beforeAll(async () => {
+        // Ensure any interpreter created by other loaded specs is disposed,
+        // so this suite can recreate it using our Karma-compatible fetch.
+        await dispose();
+    });
+
     it('image metadata', async () => {
         const expected = {
             Keywords: ['Keyword1ref2014', 'Keyword2ref2014', 'Keyword3ref2014'],
             'By-line': 'Creator1 (ref2014)',
         };
         const file = await fetchFile('metadata.jpg');
+
         const result = await getMetadata(file, {
             fetch: exiftoolFetchPolyfill,
         });
 
         for (const [k, v] of Object.entries(expected)) expect(result[k]).toEqual(v);
-    });
+    }, 10000);
 
     it('video metadata', async () => {
         const expected = {

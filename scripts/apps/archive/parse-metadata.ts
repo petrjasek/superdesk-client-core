@@ -1,4 +1,4 @@
-import {parseMetadata} from '@uswriting/exiftool/cjs';
+import {parseMetadata} from '@uswriting/exiftool';
 import {IContentProfileType} from 'apps/workspace/content/controllers/ContentProfilesController';
 import {IPTCMetadata} from 'superdesk-api';
 import {getObjectEntries} from 'utils/object';
@@ -55,7 +55,13 @@ const processMetadata = (metadata: RawMetadata): Partial<IPTCMetadata> => {
 const mapXMPtoIPTC = (metadata: RawMetadata['data'][number]) =>
     getObjectEntries(metadata).reduce<RawMetadata['data'][number]>(
         (acc, [k, v]) => {
-            acc[XMP_IPTC_TAGS[k] ?? k] = v;
+            const [rawGroup, tag] = k.split(':');
+
+            const normalizedKey = (rawGroup?.startsWith('XMP-') || rawGroup === 'XMP')
+                ? `XMP:${tag}`
+                : k;
+
+            acc[XMP_IPTC_TAGS[normalizedKey] ?? k] = v;
             return acc;
         },
         {},
@@ -63,18 +69,23 @@ const mapXMPtoIPTC = (metadata: RawMetadata['data'][number]) =>
 
 const stripGroupNames = (metadata: RawMetadata['data'][number]) =>
     (({IPTC, XMP, Composite}) => ({...IPTC, ...XMP, ...Composite}))(
-        getObjectEntries(metadata).reduce<
-      Record<string, Partial<Record<string, unknown>>>
-    >(
-        (a, [k, v]) => {
-            const [group, tag] = k.split(':');
+        getObjectEntries(metadata).reduce<Record<string, Partial<Record<string, unknown>>>>(
+            (a, [k, v]) => {
+                const [rawGroup, tag] = k.split(':');
 
-            if (!group || !tag) return a;
-            a[group][tag] = v;
-            return a;
-        },
-        {IPTC: {}, XMP: {}, Composite: {}},
-    ),
+                if (!rawGroup || !tag) return a;
+
+                const group = rawGroup.startsWith('XMP-') || rawGroup === 'XMP'
+                    ? 'XMP'
+                    : rawGroup;
+
+                if (group !== 'IPTC' && group !== 'XMP' && group !== 'Composite') return a;
+
+                a[group][tag] = v;
+                return a;
+            },
+            {IPTC: {}, XMP: {}, Composite: {}},
+        ),
     );
 
 export {getMetadata, getPictureMetadata, getVideoMetadata};

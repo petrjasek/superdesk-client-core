@@ -160,10 +160,12 @@ export const IPTC_XMP_TAGS = {
 export const XMP_IPTC_TAGS = getInvertObject(IPTC_XMP_TAGS);
 
 export const EXIFTOOL_ARGS = {
-    COMPOSITE: ['-use MWG', '-mwg:all'],
+    // Arguments must be already tokenized; the wasm wrapper does not split on spaces.
+    COMPOSITE: ['-use', 'MWG', '-mwg:all'],
     IPTC: '-iptc:all',
     JSON: '-j',
     showDuplicates: '-a',
-    showGroupNames: '-G',
+    // Ensure JSON keys are prefixed with group names so we can split by ':' later.
+    showGroupNames: '-G1',
     XMP: '-xmp:all',
 } as const;

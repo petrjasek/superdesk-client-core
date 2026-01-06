@@ -48,6 +48,13 @@ module.exports = function(config) {
         files: [
             'scripts/tests.ts',
             'scripts/**/*.html',
+            {
+                pattern: 'node_modules/@6over3/zeroperl-ts/dist/cjs/zeroperl.wasm',
+                watched: false,
+                included: false,
+                served: true,
+                nocache: true,
+            },
             { 
                 pattern: 'fixtures/**/*',
                 watched: false,
@@ -67,6 +74,12 @@ module.exports = function(config) {
         // web server port
         port: 8080,
 
+        // Allow zeroperl-ts to fetch its wasm at the default URL ("./zeroperl.wasm")
+        // in the Karma environment.
+        proxies: {
+            '/zeroperl.wasm': '/base/node_modules/@6over3/zeroperl-ts/dist/cjs/zeroperl.wasm',
+        },
+
         // cli runner port
         runnerPort: 9100,
 
@@ -74,7 +87,9 @@ module.exports = function(config) {
         autoWatch: true,
 
         // Start these browsers, currently available:
-        browsers: ['ChromeHeadless'],
+        browsers: [
+            'ChromeHeadless',
+        ],
 
         // Continuous Integration mode
         singleRun: false,

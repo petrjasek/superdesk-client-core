@@ -95,7 +95,12 @@ module.exports = function makeConfig(grunt) {
                 'jquery-gridster': 'gridster/dist/jquery.gridster.min',
                 'external-apps': path.join(process.cwd(), 'dist', 'app-importer.generated.js'),
                 'shallow-equal': 'shallow-equal/dist/index',
-                '@uswriting/exiftool/cjs': require.resolve('@uswriting/exiftool/cjs'),
+
+                // Webpack 4 prefers ESM (`module`/`exports`) in web builds, but zeroperl-ts' ESM
+                // bundle contains `import.meta.url` which Webpack 4 cannot parse. Force the CJS
+                // entrypoints for these two packages.
+                '@uswriting/exiftool': require.resolve('@uswriting/exiftool'),
+                '@6over3/zeroperl-ts': require.resolve('@6over3/zeroperl-ts'),
 
                 /**
                  * Ensure that react is loaded only once.
@@ -133,7 +138,37 @@ module.exports = function makeConfig(grunt) {
         module: {
             rules: [
                 {
-                    test: /\.(ts|tsx|js|jsx)$/,
+                    // Webpack 4 can't parse optional chaining/nullish coalescing in vendor code.
+                    // Downlevel-transpile the CJS entries we alias to (still runs the real wasm impl).
+                    test: /\.cjs$/,
+                    include: function(absolutePath) {
+                        return (
+                            absolutePath.includes('/node_modules/@uswriting/exiftool/')
+                            || absolutePath.includes('/node_modules/@6over3/zeroperl-ts/')
+                        );
+                    },
+                    loader: 'ts-loader',
+                    options: {
+                        // Force a known-good tsconfig; otherwise ts-loader may pick up a
+                        // package-local tsconfig.json inside node_modules (some have an empty
+                        // "files" list) and fail with TS18002.
+                        configFile: path.resolve(__dirname, 'scripts/tsconfig.json'),
+                        transpileOnly: true,
+                        compilerOptions: {
+                            // IMPORTANT: keep this output as CommonJS.
+                            // If we emit ESM (`module: esnext`), TypeScript appends `export {}`
+                            // to the transpiled output, which makes Webpack treat the module
+                            // as a harmony module. In Webpack 4, that can make `module.exports`
+                            // read-only at runtime, and this dependency assigns to it.
+                            module: 'commonjs',
+                            // Keep async/await and most modern runtime semantics intact.
+                            // Still downlevel optional chaining/nullish (ES2020+) for Webpack 4 parsing.
+                            target: 'es2019',
+                        },
+                    },
+                },
+                {
+                    test: /\.(ts|tsx|js|jsx|mjs)$/,
                     exclude: function(absolutePath) {
                         // don't exclude anything outside node_modules
                         if (absolutePath.indexOf('node_modules') === -1) {
@@ -164,7 +199,11 @@ module.exports = function makeConfig(grunt) {
                     },
                     loader: 'ts-loader',
                     options: {
+                        configFile: path.resolve(__dirname, 'scripts/tsconfig.json'),
                         transpileOnly: true,
+                        compilerOptions: {
+                            module: 'esnext',
+                        },
                     },
                 },
                 {
