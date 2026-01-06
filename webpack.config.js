@@ -102,6 +102,10 @@ module.exports = function makeConfig(grunt) {
                 '@uswriting/exiftool': require.resolve('@uswriting/exiftool'),
                 '@6over3/zeroperl-ts': require.resolve('@6over3/zeroperl-ts'),
 
+                // zeroperl-ts' CJS entrypoint imports `node:fs/promises` for its Node-only path.
+                // In web builds the browser path is used, so this should never execute.
+                'node:fs/promises': path.join(__dirname, 'scripts', 'tests', 'shims', 'node-fs-promises.ts'),
+
                 /**
                  * Ensure that react is loaded only once.
                  * external apps(planning, analytics, ui-framework) may try loading their own react,
