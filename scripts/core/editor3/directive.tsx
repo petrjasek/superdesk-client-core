@@ -36,6 +36,7 @@ import {ValidateCharactersConnected} from 'apps/authoring/authoring/ValidateChar
 import {Spacer} from 'core/ui/components/Spacer';
 import {copyEmbeddedArticlesIntoAssociations} from 'apps/authoring-react/copy-embedded-articles-into-associations';
 import {findParentScope} from 'core/find-parent-scope';
+import {classnames} from '@sourcefabric/common';
 
 /**
  * @ngdoc directive
@@ -132,6 +133,7 @@ class Editor3Directive {
     svc: any;
     pathToValue: any;
     limit?: number;
+    softLimit?: number;
     limitBehavior?: CharacterLimitUiBehavior;
     scrollContainer: any;
     refreshTrigger: any;
@@ -139,6 +141,7 @@ class Editor3Directive {
     cleanPastedHtml?: boolean;
     removeEventListeners?: Array<() => void>;
     fieldId?: string;
+    showFloatingCount?: boolean;
 
     // In most cases a function is called to get the label by ID. This is only required for custom fields.
     fieldLabel?: string;
@@ -148,7 +151,10 @@ class Editor3Directive {
     headerStyles?: boolean;
     helperText: string;
 
+    reactRoot: any;
+
     $onInit: () => void;
+    $onDestroy: () => void;
 
     constructor() {
         this.scope = {};
@@ -273,6 +279,10 @@ class Editor3Directive {
 
             limit: '=?',
 
+            softLimit: '=?',
+
+            showFloatingCount: '=?',
+
             /**
              * @type {String}
              * @description Force the output to be plain text and not contain any html.
@@ -325,10 +335,12 @@ class Editor3Directive {
                     this.tabindex = this.tabindex || 0;
                     this.refreshTrigger = this.refreshTrigger || 0;
                     this.showTitle = this.showTitle || false;
+                    this.showFloatingCount = this.showFloatingCount === true;
                     this.$rootScope = $rootScope;
                     this.$scope = $scope;
                     this.svc = {};
                     this.limit = this.limit || null;
+                    this.softLimit = this.softLimit || null;
                     this.limitBehavior =
                         userPreferences[AUTHORING_FIELD_PREFERENCES]?.[
                             pathValue || this.pathToValue
@@ -349,19 +361,16 @@ class Editor3Directive {
                     const renderEditor3 = () => {
                         const element = $element.get(0);
 
+                        this.reactRoot = element;
+
                         ReactDOM.unmountComponentAtNode(element);
 
-                        const textStatistics = (
-                            <Spacer h gap="8" alignItems="center" noWrap noGrow>
+                        const textStatistics = this.limit != null ? (
+                            <div className="d-flex justify-end items-center gap-0-5 ms-auto">
                                 <TextStatisticsConnected />
-
-                                {
-                                    this.limit != null && (
-                                        <CharacterCountConfigButton field={this.fieldId} />
-                                    )
-                                }
-                            </Spacer>
-                        );
+                                <CharacterCountConfigButton field={this.fieldId} />
+                            </div>
+                        ) : null;
 
                         const validationErrors = (() => {
                             if (this.validationError != null) {
@@ -427,40 +436,31 @@ class Editor3Directive {
                         };
 
                         const getTemplateForHeader = () => {
+                            const itemClasses = classnames(
+                                'authoring-header__item',
+                                {'sd-validate': this.required},
+                            );
+
                             return (
-                                <div style={{display: 'flex'}} className="sd-input-style">
-                                    <div className="authoring-header__item-label">
+                                <div className={itemClasses}>
+                                    <label className="authoring-header__item-label">
                                         {fieldName}
-                                        {this.required && (
-                                            <span>
-                                                &nbsp;
-                                                <span
-                                                    aria-label={gettext('required')}
-                                                    style={{color: 'red', fontSize: 12}}
-                                                >
-                                                    *
-                                                </span>
-                                            </span>
-                                        )}
-                                    </div>
+                                    </label>
 
-                                    <div style={{flexGrow: 1}}>
-                                        <div>
-                                            {editor3}
-                                        </div>
+                                    <div className="authoring-header__input-holder sd-input-style">
+                                        {editor3}
 
-                                        <Spacer h gap="32" justifyContent="space-between" alignItems="center" noWrap>
+                                        <div className="authoring-header__input-helper-content">
                                             {
                                                 validationErrors ?? (
                                                     <span
                                                         className="authoring-header__hint"
-                                                        style={{margin: 0}}
                                                     >
                                                         {this.helperText}
                                                     </span>
                                                 )}
                                             {textStatistics}
-                                        </Spacer>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -638,6 +638,13 @@ class Editor3Directive {
                         () => generateHtml(store, this.item, this.pathToValue),
                     );
                 });
+        };
+
+        this.$onDestroy = () => {
+            if (this.reactRoot) {
+                ReactDOM.unmountComponentAtNode(this.reactRoot);
+                this.reactRoot = null;
+            }
         };
     }
 }

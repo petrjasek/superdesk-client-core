@@ -13,20 +13,26 @@ import {FormViewEdit} from 'core/ui/components/generic-form/from-group';
 import {IFormGroup} from 'superdesk-api';
 import {isHttpApiError} from 'core/helpers/network';
 import {gettext} from 'core/utils';
-import ng from 'core/services/ng';
 import {getFormFieldsFlat} from '../generic-form/get-form-fields-flat';
+import {showUnsavedChangesModal} from './show-unsaved-changes-modal';
 import {hasValue} from '../generic-form/has-value';
+import {get, set} from 'lodash';
+import {produce} from 'immer';
+import {Button, ButtonGroup} from 'superdesk-ui-framework/react';
+import {GenericFormFieldType} from '../generic-form/interfaces/form';
+import {notify} from 'core/notify/notify';
 
-interface IProps<T> {
+interface IProps<T extends object> {
     operation: 'editing' | 'creation';
     editMode: boolean;
     hiddenFields: Array<string>;
-    getFormConfig(item?: Partial<T>): IFormGroup;
+    getFormConfig(item?: Partial<T>): IFormGroup<T>;
     item: Partial<T>;
     onEditModeChange(nextValue: boolean): void;
     onClose: () => void;
     onCancel?: () => void;
     onSave: (nextItem) => Promise<any>;
+    beforeClose?: (item: T) => Promise<boolean>;
 
     /**
      * label "save" doesn't work when data source is an array. The array
@@ -39,34 +45,25 @@ interface IIssues {
     [field: string]: Array<string>;
 }
 
-interface IState<T> {
+interface IState<T extends object> {
     nextItem: IProps<T>['item'];
     issues: IIssues;
 }
 
-function getInitialState<T>(props: IProps<T>) {
+function getInitialState<T extends object>(props: IProps<T>) {
     return {
         nextItem: props.item,
         issues: {},
     };
 }
 
-export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, IState<T>> {
+export class GenericListPageItemViewEdit<T extends object> extends React.Component<IProps<T>, IState<T>> {
     private _mounted: boolean;
-    private modal: any;
 
     constructor(props) {
         super(props);
 
-        this.modal = ng.get('modal');
-
         this.state = getInitialState(props);
-
-        this.enableEditMode = this.enableEditMode.bind(this);
-        this.handleCancel = this.handleCancel.bind(this);
-        this.handleFieldChange = this.handleFieldChange.bind(this);
-        this.isFormDirty = this.isFormDirty.bind(this);
-        this.handleSave = this.handleSave.bind(this);
     }
 
     componentDidMount() {
@@ -77,26 +74,24 @@ export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, I
         this._mounted = false;
     }
 
-    enableEditMode() {
+    enableEditMode = () => {
         this.setState({
             nextItem: this.props.item,
         }, () => {
             this.props.onEditModeChange(true);
         });
-    }
+    };
 
-    handleFieldChange(field: string, nextValue: valueof<IProps<T>['item']>) {
+    handleFieldChange = (field: string, nextValue: valueof<IProps<T>['item']>) => {
         // using updater function to avoid race conditions
-        this.setState((prevState) => ({
-            ...prevState,
-            nextItem: {
-                ...prevState.nextItem,
-                [field]: nextValue,
-            },
-        }));
-    }
+        this.setState((prevState) =>
+            produce(prevState, (draft) => {
+                set(draft.nextItem, field, nextValue);
+            }),
+        );
+    };
 
-    handleCancel() {
+    handleCancel = () => {
         const cancelFn = typeof this.props.onCancel === 'function'
             ? this.props.onCancel
             : () => {
@@ -105,24 +100,45 @@ export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, I
                 });
             };
 
-        (
-            this.isFormDirty() === false
-                ? Promise.resolve()
-                : this.modal.confirm(gettext('There are unsaved changes which will be discarded. Continue?'))
-        ).then(cancelFn)
-            .catch(() => {
-            // do nothing
+        const executeCancelFn = () => {
+            if (this.props.beforeClose != null) {
+                this.props.beforeClose(this.props.item as T).then((result) => {
+                    if (result) {
+                        cancelFn();
+                    }
+                }).catch(() => {
+                    notify.error(gettext('Canceling failed'));
+                });
+            } else {
+                cancelFn();
+            }
+        };
+
+        if (this.isFormDirty() === false) {
+            executeCancelFn();
+        } else {
+            showUnsavedChangesModal({
+                onDiscard: executeCancelFn,
             });
-    }
+        }
+    };
 
-    isFormDirty() {
+    isFormDirty = () => {
         return JSON.stringify(this.props.item) !== JSON.stringify(this.state.nextItem);
-    }
+    };
 
-    handleSave() {
+    handleSave = () => {
         const formConfig = this.props.getFormConfig(this.state.nextItem);
         const currentFields = getFormFieldsFlat(formConfig);
-        const currentFieldsIds = currentFields.map(({field}) => field).concat('_id').concat(this.props.hiddenFields);
+
+        // Filter out alert fields - they're only cosmetic
+        const fieldsToSend = currentFields.filter((field) => field.type !== GenericFormFieldType.alert);
+
+        const currentFieldsIds = [
+            ...fieldsToSend.map(({field}) => field),
+            '_id',
+            ...this.props.hiddenFields,
+        ];
 
         /*
             Form config is dynamic and can change during editing.
@@ -133,10 +149,10 @@ export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, I
             Only fields in form config at the time of saving will be sent.
         */
         const nextItemCleaned: Partial<T> = currentFieldsIds.reduce<Partial<T>>((acc, field) => {
-            const value = this.state.nextItem[field];
+            const value = get(this.state.nextItem, field);
 
             if (value != null) {
-                acc[field] = value;
+                set(acc, field, value);
             }
 
             return acc;
@@ -145,10 +161,11 @@ export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, I
         const requiredValidationErrors = currentFields
             .filter(
                 (fieldConfig) =>
-                    fieldConfig.required === true && hasValue(fieldConfig, nextItemCleaned[fieldConfig.field]) !== true,
+                    fieldConfig.required === true
+                    && hasValue(fieldConfig, get(nextItemCleaned, fieldConfig.field)) !== true,
             )
             .reduce<IIssues>((acc, fieldConfig) => {
-                acc[fieldConfig.field] = [gettext('Field is required')];
+                set(acc, fieldConfig.field, [gettext('Field is required')]);
 
                 return acc;
             }, {});
@@ -161,7 +178,7 @@ export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, I
             return;
         }
 
-        this.props.onSave(nextItemCleaned).then(() => {
+        return this.props.onSave(nextItemCleaned).then(() => {
             if (this._mounted) {
                 this.setState({
                     issues: {},
@@ -209,7 +226,25 @@ export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, I
                     throw new Error(res);
                 }
             });
-    }
+    };
+
+    handleClose = () => {
+        const {onClose, beforeClose, item} = this.props;
+
+        if (beforeClose != null) {
+            beforeClose(item as T)
+                .then((result) => {
+                    if (result) {
+                        onClose();
+                    }
+                })
+                .catch(() => {
+                    notify.error(gettext('Closing failed'));
+                });
+        } else {
+            onClose();
+        }
+    };
 
     render() {
         return (
@@ -223,21 +258,24 @@ export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, I
                                     className="side-panel__sliding-toolbar side-panel__sliding-toolbar--right"
                                     data-test-id="toolbar"
                                 >
-                                    <button
-                                        className="btn"
-                                        onClick={this.handleCancel}
-                                        data-test-id="item-view-edit--cancel-save"
+                                    <ButtonGroup
+                                        align="end"
+                                        orientation="horizontal"
                                     >
-                                        {gettext('Cancel')}
-                                    </button>
-                                    <button
-                                        disabled={!this.isFormDirty()}
-                                        onClick={this.handleSave}
-                                        className="btn btn--primary"
-                                        data-test-id="item-view-edit--save"
-                                    >
-                                        {this.props.labelForSaveButton}
-                                    </button>
+                                        <Button
+                                            text={gettext('Cancel')}
+                                            type="secondary"
+                                            onClick={this.handleCancel}
+                                            data-test-id="item-view-edit--cancel-save"
+                                        />
+                                        <Button
+                                            type="primary"
+                                            disabled={!this.isFormDirty()}
+                                            onClick={this.handleSave}
+                                            data-test-id="item-view-edit--save"
+                                            text={this.props.labelForSaveButton}
+                                        />
+                                    </ButtonGroup>
                                 </div>
                             )
                             : (
@@ -245,12 +283,20 @@ export class GenericListPageItemViewEdit<T> extends React.Component<IProps<T>, I
                                     <div>
                                         {
                                             this.props.operation === 'editing' ? (
-                                                <button onClick={this.enableEditMode} className="icn-btn">
+                                                <button
+                                                    className="icn-btn"
+                                                    onClick={this.enableEditMode}
+                                                    data-test-id="list-page-edit"
+                                                >
                                                     <i className="icon-pencil" />
                                                 </button>
                                             ) : null
                                         }
-                                        <button className="icn-btn" onClick={this.props.onClose}>
+                                        <button
+                                            className="icn-btn"
+                                            onClick={this.handleClose}
+                                            data-test-id="list-page-close"
+                                        >
                                             <i className="icon-close-small" />
                                         </button>
                                     </div>

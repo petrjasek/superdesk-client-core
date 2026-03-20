@@ -26,7 +26,7 @@ import {
     isIFormGroupCollapsible,
     isIFormGroup,
     isIFormField,
-    FormFieldType,
+    GenericFormFieldType,
 } from './ui/components/generic-form/interfaces/form';
 import {UserHtmlSingleLine} from './helpers/UserHtmlSingleLine';
 import {Row, Item, Column} from './ui/components/List';
@@ -70,7 +70,7 @@ import {Icon} from './ui/components/Icon2';
 import {AuthoringWorkspaceService} from 'apps/authoring/authoring/services/AuthoringWorkspaceService';
 import ng from 'core/services/ng';
 import {Spacer, SpacerBlock, SpacerInlineFlex} from './ui/components/Spacer';
-import {appConfig, authoringReactViewEnabled, getUserInterfaceLanguage} from 'appConfig';
+import {appConfig, authoringReactViewEnabled, userInterfaceLanguage} from 'appConfig';
 import {httpRequestJsonLocal, httpRequestVoidLocal, httpRequestRawLocal} from './helpers/network';
 import {generatePatch} from './patch';
 import {getLinesCount} from 'apps/authoring/authoring/components/line-count';
@@ -117,7 +117,7 @@ import {
 import {tryLocking, tryUnlocking} from './helpers/locking-helpers';
 import {Card} from './ui/components/Card';
 import {getTextColor} from './helpers/utils';
-import {showModal} from '@superdesk/common';
+import {showModal} from '@sourcefabric/common';
 import {showConfirmationPrompt} from './ui/show-confirmation-prompt';
 import {toElasticQuery} from './query-formatting';
 import {PreviewFieldType} from 'apps/authoring/preview/previewFieldByType';
@@ -358,9 +358,11 @@ export function getSuperdeskApiImplementation(
                 getActiveDeskId: sdApi.desks.getActiveDeskId,
                 waitTilReady: sdApi.desks.waitTilReady,
                 getDeskById: sdApi.desks.getDeskById,
+                getStageById: sdApi.desks.getStageById,
             },
             contentProfile: {
                 get: (id) => sdApi.contentProfiles.get(id),
+                getAll: () => sdApi.contentProfiles.getAll(),
             },
             vocabulary: {
                 getAll: () => sdApi.vocabularies.getAll(),
@@ -416,9 +418,10 @@ export function getSuperdeskApiImplementation(
                 return showModal(Component, containerClass);
             },
             alert: (message: string) => modal.alert({bodyText: message}),
-            confirm: (message: string, title?: string) => showConfirmationPrompt({
+            confirm: (message: string, title?: string, primaryActionText?: string) => showConfirmationPrompt({
                 title: title ?? gettext('Confirm'),
                 message,
+                primaryActionText,
             }),
             prompt: ui.prompt,
             showIgnoreCancelSaveDialog,
@@ -483,7 +486,7 @@ export function getSuperdeskApiImplementation(
             },
         },
         forms: {
-            FormFieldType,
+            GenericFormFieldType,
             generateFilterForServer,
             isIFormGroupCollapsible,
             isIFormGroup,
@@ -501,8 +504,8 @@ export function getSuperdeskApiImplementation(
             },
         },
         localization: {
-            gettext: (message, params) => gettext(message, params),
-            gettextPlural: (count, singular, plural, params) => gettextPlural(count, singular, plural, params),
+            gettext,
+            gettextPlural,
             formatDate: formatDate,
             formatDateTime: formatDateTime,
             longFormatDateTime: (date: Date | string, timezoneId?: string) => {
@@ -521,8 +524,8 @@ export function getSuperdeskApiImplementation(
             },
             getRelativeOrAbsoluteDateTime: getRelativeOrAbsoluteDateTime,
             locale: {
-                code: getUserInterfaceLanguage().replace('_', '-'),
-                firstDayOfWeek: appConfig.startingDay,
+                code: userInterfaceLanguage.replace('_', '-'),
+                firstDayOfWeek: Number(appConfig.startingDay),
             },
         },
         privileges: {
@@ -554,6 +557,7 @@ export function getSuperdeskApiImplementation(
             getCurrentUser: () => session.getIdentity(),
             getSessionId: () => session.sessionId,
             getCurrentUserId: () => sdApi.user.getCurrentUserId(),
+            getUniqueClientId: () => sdApi.user.getUniqueClientId(),
         },
         browser: {
             location: {

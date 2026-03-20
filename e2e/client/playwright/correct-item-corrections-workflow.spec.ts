@@ -1,6 +1,7 @@
 import {test, expect} from '@playwright/test';
 import {Monitoring} from './page-object-models/monitoring';
 import {restoreDatabaseSnapshot, s, waitForToastMessage} from './utils';
+import {setEditor3FieldValue} from './utils/editor3';
 import {getStorageState} from './utils/storage-state';
 
 test.use({
@@ -36,12 +37,14 @@ test('can correct published item using corrections workflow', async ({page}) => 
     await expect(
         page
             .locator(s('monitoring-group=Sports / Working Stage', 'article-item=Story 5'))
-            .getByTitle('Correction', {exact: true}),
+            .getByText('Correction', {exact: true}),
     ).toBeVisible();
 
     // edit item
-    await page.locator(s('authoring')).locator(s('field--headline')).getByRole('textbox').clear();
-    await page.locator(s('authoring')).locator(s('field--headline')).getByRole('textbox').fill('Story 5.1');
+    await setEditor3FieldValue(
+        page.locator(s('authoring')).locator(s('field--headline')).getByRole('textbox'),
+        'Story 5.1',
+    );
     await page.locator(s('authoring-topbar')).getByRole('button', {name: 'Save'}).click();
     await waitForToastMessage(page, 'success', 'Item updated.');
 
@@ -55,12 +58,12 @@ test('can correct published item using corrections workflow', async ({page}) => 
         page.locator(s('monitoring-group=Sports desk output', 'article-item=Story 5.1')),
     ).toBeVisible();
     await expect(
-        page.locator(s('monitoring-group=Sports desk output', 'article-item=Story 5.1')).getByTitle('Corrected'),
+        page.locator(s('monitoring-group=Sports desk output', 'article-item=Story 5.1')).getByText('Corrected'),
     ).toBeVisible();
     await expect(
         page
             .locator(s('monitoring-group=Sports desk output', 'article-item=Story 5.1'))
-            .getByTitle('Correction', {exact: true}),
+            .getByText('Correction', {exact: true}),
     ).not.toBeVisible();
 
     await page.goto('/#/publish_queue');

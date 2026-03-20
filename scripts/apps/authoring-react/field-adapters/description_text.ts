@@ -10,6 +10,8 @@ export const description_text: IFieldAdapter<IArticle> = {
             editorFormat: [],
             minLength: fieldSchema?.minlength,
             maxLength: fieldSchema?.maxlength,
+            maxSoftLength: fieldEditor?.maxSoftLength,
+            showFloatingCount: fieldEditor?.showFloatingCount,
             cleanPastedHtml: fieldEditor?.cleanPastedHTML,
             singleLine: true,
             disallowedCharacters: [],

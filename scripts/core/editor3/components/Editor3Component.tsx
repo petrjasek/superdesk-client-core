@@ -32,7 +32,13 @@ import {getSpellcheckWarningsByBlock} from './spellchecker/SpellcheckerDecorator
 import {getSpellchecker} from './spellchecker/default-spellcheckers';
 import {IEditorStore} from '../store';
 import {appConfig} from 'appConfig';
-import {EDITOR_BLOCK_TYPE, formattingOptionsThatRequireDragAndDrop, MIME_TYPE_SUPERDESK_TEXT_ITEM} from '../constants';
+import {
+    EDITOR_BLOCK_TYPE,
+    formattingOptionsThatRequireDragAndDrop,
+    MIME_TYPE_SUPERDESK_TEXT_ITEM,
+    NDASH_CHAR,
+    THIN_SPACE_CHAR,
+} from '../constants';
 import {IEditorComponentProps, RICH_FORMATTING_OPTION} from 'superdesk-api';
 import {preventInputWhenLimitIsPassed} from '../helpers/characters-limit';
 import {handleBeforeInputHighlights} from '../helpers/handleBeforeInputHighlights';
@@ -44,6 +50,7 @@ import {gettext, isMacOS} from 'core/utils';
 import {canAddArticleEmbed} from './article-embed/can-add-article-embed';
 import {addInternalEventListener} from 'core/internal-events';
 import {IconButton, Spacer} from 'superdesk-ui-framework/react';
+import {hashString} from '../helpers/hashString';
 
 export const EVENT_TYPES_TRIGGER_DROP_ZONE = [
     ...MEDIA_TYPES_TRIGGER_DROP_ZONE,
@@ -62,6 +69,7 @@ const VALID_MEDIA_TYPES = [
 ];
 
 export const EDITOR_GLOBAL_REFS = 'editor3-refs';
+export const EDITOR_COPY_METADATA = '__editor3-copy-metadata';
 const editor3AutocompleteClassName = 'editor3-autocomplete';
 
 /**
@@ -297,7 +305,7 @@ export class Editor3Component extends React.Component<IPropsEditor3Component, IS
     }
 
     keyBindingFn(e) {
-        const {key, ctrlKey, shiftKey, metaKey} = e;
+        const {key, ctrlKey, shiftKey, metaKey, altKey} = e;
         const selectionState = this.props.editorState.getSelection();
         const modifierKey = isMacOS() ? metaKey : ctrlKey;
 
@@ -344,10 +352,50 @@ export class Editor3Component extends React.Component<IPropsEditor3Component, IS
             const notAllowBold = key === 'b' && editorFormat.indexOf('bold') === -1;
             const notAllowItalic = key === 'i' && editorFormat.indexOf('italic') === -1;
             const notAllowUnderline = key === 'u' && editorFormat.indexOf('underline') === -1;
+            const notAllowCompanyTag = key === '3' &&
+                editorFormat.indexOf('EDITOR_TAG_company' as RICH_FORMATTING_OPTION) === -1;
+            const notAllowPersonTag = key === '6' &&
+                editorFormat.indexOf('EDITOR_TAG_person' as RICH_FORMATTING_OPTION) === -1;
 
-            if (notAllowBold || notAllowItalic || notAllowUnderline) {
+            if (notAllowBold || notAllowItalic || notAllowUnderline || notAllowCompanyTag || notAllowPersonTag) {
                 e.preventDefault();
                 return '';
+            }
+        }
+
+        // Ctrl/Cmd + 3 for Company tag
+        if (key === '3' && modifierKey) {
+            e.preventDefault();
+            return 'toggle-company-tag';
+        }
+
+        // Ctrl/Cmd + 6 for Person tag
+        if (key === '6' && modifierKey) {
+            e.preventDefault();
+            return 'toggle-person-tag';
+        }
+
+        // Cmd/Ctrl + Alt + - for ndash
+        if (key === '-' && altKey && !shiftKey) {
+            const isMac = isMacOS();
+            const macCombo = isMac && metaKey && !ctrlKey;
+            const winCombo = !isMac && !metaKey && ctrlKey;
+
+            if (macCombo || winCombo) {
+                e.preventDefault();
+                return 'custom-ndash';
+            }
+        }
+
+        // Cmd/Ctrl + Alt + Shift + Space for thin space
+        if (key === ' ' && altKey && shiftKey) {
+            const isMac = isMacOS();
+            const macCombo = isMac && metaKey && !ctrlKey;
+            const winCombo = !isMac && !metaKey && ctrlKey;
+
+            if (macCombo || winCombo) {
+                e.preventDefault();
+                return 'custom-thin-space';
             }
         }
 
@@ -367,6 +415,34 @@ export class Editor3Component extends React.Component<IPropsEditor3Component, IS
             onCreateDeleteSuggestion,
             onCreateChangeStyleSuggestion,
         } = this.props;
+
+        const canEditInSuggestingMode = (editorState, author) =>
+            Suggestions.allowEditSuggestionOnLeft(editorState, author) ||
+            Suggestions.allowEditSuggestionOnRight(editorState, author);
+
+        const toggleInlineStyleOrSuggest = (
+            editorState,
+            style: string,
+            suggestingMode: boolean,
+            author,
+            onCreateChangeStyleSuggestion: (style: string, active: boolean) => void,
+        ) => {
+            const active = editorState.getCurrentInlineStyle().has(style);
+
+            if (suggestingMode) {
+                if (!canEditInSuggestingMode(editorState, author)) {
+                    return {handled: true as const};
+                }
+
+                onCreateChangeStyleSuggestion(style, active);
+                return {handled: true as const};
+            }
+
+            return {
+                handled: false as const,
+                newState: RichUtils.toggleInlineStyle(editorState, style),
+            };
+        };
 
         if (singleLine && command === 'split-block') {
             return 'handled';
@@ -428,6 +504,64 @@ export class Editor3Component extends React.Component<IPropsEditor3Component, IS
             case 'secondary-paste': // this is blocking redo on non-windows systems, should be osx specific
                 newState = EditorState.redo(editorState);
                 break;
+            case 'custom-ndash': {
+                const ndashContentState = Modifier.replaceText(
+                    editorState.getCurrentContent(),
+                    editorState.getSelection(),
+                    NDASH_CHAR,
+                );
+
+                newState = EditorState.push(
+                    editorState,
+                    ndashContentState,
+                    'insert-characters',
+                );
+                break;
+            }
+            case 'custom-thin-space': {
+                const thinSpaceContentState = Modifier.replaceText(
+                    editorState.getCurrentContent(),
+                    editorState.getSelection(),
+                    THIN_SPACE_CHAR,
+                );
+
+                newState = EditorState.push(
+                    editorState,
+                    thinSpaceContentState,
+                    'insert-characters',
+                );
+                break;
+            }
+            case 'toggle-company-tag': {
+                const res = toggleInlineStyleOrSuggest(
+                    editorState,
+                    'EDITOR_TAG_company',
+                    suggestingMode,
+                    author,
+                    onCreateChangeStyleSuggestion,
+                );
+
+                if (res.handled) {
+                    return 'handled';
+                }
+                newState = res.newState;
+                break;
+            }
+            case 'toggle-person-tag': {
+                const res = toggleInlineStyleOrSuggest(
+                    editorState,
+                    'EDITOR_TAG_person',
+                    suggestingMode,
+                    author,
+                    onCreateChangeStyleSuggestion,
+                );
+
+                if (res.handled) {
+                    return 'handled';
+                }
+                newState = res.newState;
+                break;
+            }
             case 'backspace': {
                 this.setState({contentChangesAfterLastFocus: this.state.contentChangesAfterLastFocus + 1});
 
@@ -561,6 +695,12 @@ export class Editor3Component extends React.Component<IPropsEditor3Component, IS
         this.removeListeners.push(
             addInternalEventListener('editor3SpellcheckerActionWasExecuted', this.spellcheck),
         );
+
+        // Native DOM listener is required here. Using DraftJS's `onCopy` prop would
+        // replace its internal copy handler, preventing it from storing the selected
+        // blocks in its internal clipboard. The native listener fires
+        // after DraftJS's handler, so both run.
+        this.div?.addEventListener('copy', this.storeCopyOrigin);
     }
 
     handleRefs(editor: IEditor3) {
@@ -578,12 +718,38 @@ export class Editor3Component extends React.Component<IPropsEditor3Component, IS
     componentWillUnmount() {
         $(this.div).off();
 
+        this.div?.removeEventListener('copy', this.storeCopyOrigin);
+
         delete window[EDITOR_GLOBAL_REFS][this.editorKey];
 
         for (const fn of this.removeListeners) {
             fn();
         }
     }
+
+    /**
+     * Stores the origin of the copy event in a window variable so that `handlePastedText`
+     * can determine whether the paste originates from an editor in this window.
+     *
+     * We cannot rely on the editor key embedded in clipboard HTML because Chrome and Safari
+     * omit the `data-editor` attribute from copied HTML (Firefox keeps it). Instead
+     * we store a hash of the copied plain text alongside the editor key. On paste,
+     * handlePastedText recomputes the hash from the text it receives and compares:
+     * a match means the clipboard was not replaced by an external application after
+     * the copy, so the source editor's internal DraftJS clipboard is still valid.
+     */
+    private storeCopyOrigin = () => {
+        if (this.editorKey == null) {
+            return;
+        }
+
+        const text = window.getSelection()?.toString() || '';
+
+        window[EDITOR_COPY_METADATA] = {
+            editorKey: this.editorKey,
+            contentHash: hashString(text),
+        };
+    };
 
     componentDidUpdate(prevProps: IPropsEditor3Component) {
         if (window.hasOwnProperty('instgrm')) {

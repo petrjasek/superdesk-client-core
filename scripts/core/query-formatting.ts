@@ -92,7 +92,7 @@ function toPyEveFilter(q: ILogicalOperator | IComparison) {
                 case '$stringContains':
                     return {[field]: {
                         $regex: value.val,
-                        $options: '-i',
+                        $options: 'i',
                     }};
             }
 
@@ -143,7 +143,7 @@ export function toElasticQuery(q: ISuperdeskQuery): {q?: string; source: string}
     const query: IQuery = {
         sort: q.sort,
         size: q.max_results,
-        from: (q.page - 1) * q.max_results,
+        from: (q.page > 0 ? q.page - 1 : 0) * q.max_results,
     };
 
     const filtered = {};

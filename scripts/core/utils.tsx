@@ -1,6 +1,6 @@
 import React from 'react';
 import gettextjs from 'gettext.js';
-import {appConfig, getUserInterfaceLanguage} from 'appConfig';
+import {appConfig, userInterfaceLanguage} from 'appConfig';
 import {
     IVocabularyItem,
     IArticle,
@@ -11,23 +11,11 @@ import {
 } from 'superdesk-api';
 import {assertNever} from './helpers/typescript-helpers';
 import {isObject, omit} from 'lodash';
-import formatISO from 'date-fns/formatISO';
 import {DEFAULT_LIST_CONFIG, CORE_PROJECTED_FIELDS, UI_PROJECTED_FIELD_MAPPINGS} from 'apps/search/constants';
+import {trimEndExact, trimStartExact} from './helpers/utils';
+import {TZDate} from '@sourcefabric/date-fns-tz';
 
 export const DEFAULT_ENGLISH_TRANSLATIONS = {'': {'language': 'en', 'plural-forms': 'nplurals=2; plural=(n != 1);'}};
-
-const language = getUserInterfaceLanguage();
-const filename = `/languages/${language}.json?nocache=${Date.now()}`;
-
-function applyTranslations(translations) {
-    const langOverride = appConfig.langOverride ?? {};
-
-    if (langOverride[language] != null) {
-        Object.assign(translations, langOverride[language]);
-    }
-
-    window.translations = translations;
-}
 
 export function isMacOS() {
     if (
@@ -38,26 +26,6 @@ export function isMacOS() {
     }
 
     return false;
-}
-
-function requestListener() {
-    const translations = JSON.parse(this.responseText);
-
-    if (translations[''] == null || translations['']['language'] == null || translations['']['plural-forms'] == null) {
-        throw new Error(`Language metadata not found in "${filename}"`);
-    }
-
-    applyTranslations(translations);
-}
-
-if (language === 'en') {
-    applyTranslations(DEFAULT_ENGLISH_TRANSLATIONS);
-} else {
-    const req = new XMLHttpRequest();
-
-    req.addEventListener('load', requestListener);
-    req.open('GET', filename, false);
-    req.send();
 }
 
 export const i18n = gettextjs();
@@ -143,7 +111,7 @@ export function getProjectedFieldsArticle(): Array<string> {
  */
 const gettextReact = (
     text: string,
-    params: {[placeholder: string]: string | number | React.ComponentType},
+    params: {[placeholder: string]: string | number | React.ComponentType | (() => JSX.Element)},
 ): Array<JSX.Element> => {
     let matches: Array<{index: number, str: string, placeholder: string}> = [];
 
@@ -194,29 +162,54 @@ const gettextReact = (
     return result;
 };
 
-// example: gettext('Item was locked by {{user}}.', {user: 'John Doe'});
-export const gettext = (
-    text: string,
-    params: {[placeholder: string]: string | number | React.ComponentType} = {},
-) => {
-    if (!text) {
-        return '';
-    }
-
-    let translated = i18n.gettext(text);
-
+/**
+ * Core translation logic that handles parameter replacement.
+ * Used by both `gettext` and `gettextPlural`.
+ */
+function gettextCore(
+    translated: string,
+    params?: {[key: string]: string | number | React.ComponentType | (() => JSX.Element)},
+): string | Array<JSX.Element> {
     const hasReactPlaceholders = Object.values(params ?? {}).some((val) => typeof val === 'function');
 
     if (hasReactPlaceholders) {
         return gettextReact(translated, params ?? {});
     } else {
+        let result = translated;
+
         Object.keys(params ?? {}).forEach((param) => {
-            translated = translated.replace(new RegExp(`{{\\s*${param}\\s*}}`, 'g'), params[param]);
+            /**
+             * Casting param to string because we can't do full type narrowing here based on params type
+             */
+            result = result.replace(new RegExp(`{{\\s*${param}\\s*}}`, 'g'), String(params[param]));
         });
 
-        return translated;
+        return result;
     }
-};
+}
+
+// example: gettext('Item was locked by {{user}}.', {user: 'John Doe'});
+export function gettext(text: string): string;
+export function gettext(
+    text: string,
+    params: {[placeholder: string]: string | number},
+): string;
+export function gettext(
+    text: string,
+    params: {[placeholder: string]: string | number | React.ComponentType | (() => JSX.Element)},
+): Array<JSX.Element>;
+export function gettext(
+    text: string,
+    params?: {[placeholder: string]: string | number | React.ComponentType | (() => JSX.Element)},
+): string | Array<JSX.Element> {
+    if (!text) {
+        return '';
+    }
+
+    const translated: string = i18n.gettext(text);
+
+    return gettextCore(translated, params);
+}
 
 /*
     Example:
@@ -228,24 +221,37 @@ export const gettext = (
         {count: 6, user: 'John Doe'},
     );
 */
-export const gettextPlural = (
+export function gettextPlural(
     count: number,
     text: string,
     pluralText: string,
-    params: {[key: string]: string | number | React.ComponentType} = {},
-): string => {
+): string;
+export function gettextPlural(
+    count: number,
+    text: string,
+    pluralText: string,
+    params: {[key: string]: string | number},
+): string;
+export function gettextPlural(
+    count: number,
+    text: string,
+    pluralText: string,
+    params: {[key: string]: string | number | React.ComponentType | (() => JSX.Element)},
+): Array<JSX.Element>;
+export function gettextPlural(
+    count: number,
+    text: string,
+    pluralText: string,
+    params?: {[key: string]: string | number | React.ComponentType | (() => JSX.Element)},
+): string | Array<JSX.Element> {
     if (!text) {
         return '';
     }
 
-    let translated = i18n.ngettext(text, pluralText, count);
+    const translated: string = i18n.ngettext(text, pluralText, count);
 
-    Object.keys(params ?? {}).forEach((param) => {
-        translated = translated.replace(new RegExp(`{{\\s*${param}\\s*}}`), params[param]);
-    });
-
-    return translated;
-};
+    return gettextCore(translated, params);
+}
 
 /**
  * Escape given string for reg exp
@@ -260,7 +266,7 @@ export function escapeRegExp(string) {
 }
 
 export function getVocabularyItemNameTranslated(term: IVocabularyItem, _lang?: string): string {
-    const _language = _lang ?? getUserInterfaceLanguage();
+    const _language = _lang ?? userInterfaceLanguage;
 
     // FIXME: Remove replacing _/- when language codes are normalized on the server.
 
@@ -386,6 +392,37 @@ export function isScrolledIntoViewVertically(element: HTMLElement, container: HT
     return topVisible && bottomVisible;
 }
 
+export function getUTCOffset(timezoneId: string) {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezoneId,
+        timeZoneName: 'longOffset',
+    });
+
+    const offsetStr = formatter.formatToParts(new Date()).find((part) => part.type === 'timeZoneName').value;
+
+    return trimStartExact(offsetStr, 'GMT');
+}
+
+/**
+ * Enforce TZDate because Date is inconsistent, sometimes it returns the time in UTC and sometimes in local timezone.
+ */
+export function toIsoStringWithoutTimezoneOffset(date: TZDate) {
+    return date.toISOString().slice(0, 19);
+}
+
+export function correctTimezone(
+    /**
+     * Date string from superdesk server is sometimes(embargo, publish schedule) formatted as UTC, ends with '+0000'
+     * but is not actually UTC. It's local time in a timezone specified elsewhere.
+     */
+    date: string,
+
+    timeZone: string,
+): TZDate {
+    return new TZDate(trimEndExact(date, '+0000') + getUTCOffset(timeZone), timeZone);
+}
+
+
 /**
  * Note: `{a: false}` will be converted to '?a=false'.
  * If you need to exclude keys when value is `false`,
@@ -401,20 +438,6 @@ export function toQueryString(
     return '?' + Object.keys(params).map((key) =>
         `${key}=${isObject(params[key]) ? JSON.stringify(params[key]) : encodeURIComponent(params[key])}`,
     ).join('&');
-}
-
-/**
- * Output example: "1970-01-19T22:57:38"
- */
-export function toServerDateFormat(date: Date): string {
-    return formatISO(date).slice(0, 19);
-}
-
-/**
- * Parse server date without timezone so it won't convert it to local timezone.
- */
-export function fromServerDateFormat(date: string): Date {
-    return new Date(date.slice(0, 19));
 }
 
 export function getArticleLabel(item: IArticle): string {
@@ -445,7 +468,7 @@ export function downloadFile(data: string, mimeType: string, fileName: string) {
 }
 
 export function stripBaseRestApiFields<T extends {}>(entity: T): T {
-    type IKeys = { [P in keyof Required<IBaseRestApiResponse>]: 1 };
+    type IKeys = {[P in keyof Required<IBaseRestApiResponse>]: 1};
 
     const keysObject: IKeys = {
         _updated: 1,
@@ -464,7 +487,7 @@ export function stripBaseRestApiFields<T extends {}>(entity: T): T {
 }
 
 export function stripLockingFields<T extends {}>(entity: T): T {
-    type IKeys = { [P in keyof Required<ILockInfo>]: 1 };
+    type IKeys = {[P in keyof Required<ILockInfo>]: 1};
 
     const keysObject: IKeys = {
         _lock: 1,

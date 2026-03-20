@@ -3,6 +3,7 @@ var webpack = require('webpack');
 var lodash = require('lodash');
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const fs = require('fs');
 
 function getModuleDir(moduleName) {
@@ -13,6 +14,94 @@ function getModuleDir(moduleName) {
         ),
         '../'
     );
+}
+
+function countOccurrences(_string, substring) {
+    return _string.split(substring).length - 1;
+}
+
+function applyDefaults(appConfig) {
+    if (appConfig.startingDay == null) {
+        appConfig.startingDay = '0'; // sunday
+    }
+
+    if (appConfig.shortTimeFormat == null) {
+        appConfig.shortTimeFormat = 'HH:mm'; // 24h format
+    }
+
+    if (appConfig.ui == null) {
+        appConfig.ui = {};
+    }
+
+    if (appConfig.ui.sendEmbargo == null) {
+        appConfig.ui.sendEmbargo = false;
+    }
+
+    if (appConfig.ui.italicAbstract == null) {
+        appConfig.ui.italicAbstract = true;
+    }
+
+    if (appConfig.ui.publishEmbargo == null) {
+        appConfig.ui.publishEmbargo = true;
+    }
+
+    if (appConfig.authoring == null) {
+        appConfig.authoring = {};
+    }
+
+    if (appConfig.authoring.panels == null) {
+        appConfig.authoring.panels = {};
+    }
+
+    if (appConfig.authoring.panels.publish == null) {
+        appConfig.authoring.panels.publish = {};
+    }
+
+    if (appConfig.authoring.panels.publish.publishSchedule == null) {
+        appConfig.authoring.panels.publish.publishSchedule = true;
+    }
+
+    if (appConfig.authoring.panels.publish.publishingTarget == null) {
+        appConfig.authoring.panels.publish.publishingTarget = true;
+    }
+
+    if (appConfig.authoring.panels.sendTo == null) {
+        appConfig.authoring.panels.sendTo = {};
+    }
+
+    if (appConfig.authoring.panels.sendTo.publishSchedule == null) {
+        appConfig.authoring.panels.sendTo.publishSchedule = false;
+    }
+
+    const defaultDateFormat = 'MM/DD';
+    const defaultTimeFormat = 'hh:mm';
+
+    if (appConfig.view == null) {
+        appConfig.view = {
+            dateformat: defaultDateFormat,
+            timeformat: defaultTimeFormat,
+        };
+    }
+
+    if (appConfig.view.dateformat == null) {
+        appConfig.view.dateformat = defaultDateFormat;
+    }
+
+    if (appConfig.view.timeformat == null) {
+        appConfig.view.timeformat = defaultTimeFormat;
+    }
+
+    if (appConfig.longDateFormat == null) {
+        appConfig.longDateFormat = 'LLL';
+    }
+
+    if (appConfig.features == null) {
+        appConfig.features = {};
+    }
+
+    if (appConfig.features.autorefreshContent == null) {
+        appConfig.features.autorefreshContent = true; // default to true
+    }
 }
 
 // makeConfig creates a new configuration file based on the passed options.
@@ -27,6 +116,8 @@ module.exports = function makeConfig(grunt) {
     }
 
     const sdConfig = lodash.defaultsDeep(require(appConfigPath)(grunt), getDefaults(grunt));
+
+    applyDefaults(sdConfig);
 
     const apps = sdConfig.importApps || sdConfig.apps || [];
 
@@ -51,7 +142,8 @@ module.exports = function makeConfig(grunt) {
 
     return {
         entry: {
-            app: [path.join(__dirname, 'scripts', 'index')],
+            init: path.join(__dirname, 'scripts', 'init'),
+            app: path.join(__dirname, 'scripts', 'index'),
         },
 
         output: {
@@ -75,6 +167,12 @@ module.exports = function makeConfig(grunt) {
                 filename: '[name].bundle.css',
                 chunkFilename: '[id].bundle.css',
             }),
+            // Webpack 5 removed automatic Node.js polyfills for browser builds
+            // This plugin restores them for legacy code that depends on Node APIs (e.g., Buffer, process, stream)
+            // Exclude 'console' since browsers provide their own implementation
+            new NodePolyfillPlugin({
+                excludeAliases: ['console'],
+            }),
         ],
 
         resolve: {
@@ -82,8 +180,10 @@ module.exports = function makeConfig(grunt) {
                 __dirname,
                 path.join(__dirname, 'scripts'),
                 path.join(__dirname, 'styles', 'sass'),
+                path.join(__dirname, 'node_modules'),
                 'node_modules',
             ],
+            mainFields: ['module', 'browser', 'main'],
             alias: {
                 'moment-timezone': 'moment-timezone/builds/moment-timezone-with-data-10-year-range',
                 'rangy-saverestore': 'rangy/lib/rangy-selectionsaverestore',
@@ -91,7 +191,7 @@ module.exports = function makeConfig(grunt) {
                 'jquery-gridster': 'gridster/dist/jquery.gridster.min',
                 'external-apps': path.join(process.cwd(), 'dist', 'app-importer.generated.js'),
                 'shallow-equal': 'shallow-equal/dist/index',
-                'jquery': getModuleDir('jquery'),
+                '@uswriting/exiftool/cjs': require.resolve('@uswriting/exiftool/cjs'),
 
                 /**
                  * Ensure that react is loaded only once.
@@ -130,13 +230,41 @@ module.exports = function makeConfig(grunt) {
             rules: [
                 {
                     test: /\.(ts|tsx|js|jsx)$/,
-                    include: [
-                        path.join(__dirname, 'scripts'),
-                        path.resolve('node_modules', 'superdesk-planning'),
-                        path.resolve('node_modules', 'superdesk-publisher'),
-                        path.resolve('node_modules', 'superdesk-analytics'),
-                        path.resolve('node_modules', 'date-fns'),
-                    ],
+                    exclude: function(absolutePath) {
+                        // don't exclude anything outside node_modules
+                        if (absolutePath.indexOf('node_modules') === -1) {
+                            return false;
+                        }
+
+                        // Exclude these packages from ts-loader - they are pre-built ESM modules
+                        if (
+                            absolutePath.includes('/@babel/runtime/')
+                            || absolutePath.includes('/react-resizable-panels/')
+                        ) {
+                            return true;
+                        }
+
+                        if (
+                            // date-fns uses optional chaining and nullish coalescing
+                            absolutePath.includes('/node_modules/date-fns/')
+
+                            // @sourcefabric/date-fns-tz uses logical OR assignment operator ||=
+                            || absolutePath.includes('/@sourcefabric/date-fns-tz/')
+                            || absolutePath.includes('/@sourcefabric/common/')
+                        ) {
+                            return false;
+                        }
+
+                        // exclude everything else, unless it's a part of a superdesk app like superdesk-planning
+                        // but is not its dependency.
+                        // For example, `superdesk-planning/node_modules/**/*` will be excluded.
+                        const exclude = !validModules.some(
+                            (app) =>
+                                absolutePath.includes(app) && countOccurrences(absolutePath, '/node_modules/') === 1
+                        );
+
+                        return exclude;
+                    },
                     loader: 'ts-loader',
                     options: {
                         transpileOnly: true,
@@ -172,8 +300,18 @@ module.exports = function makeConfig(grunt) {
                     ],
                 },
                 {
-                    test: /\.(png|gif|jpeg|jpg|woff|woff2|eot|ttf|svg)(\?.*$|$)/,
-                    loader: 'file-loader',
+                    test: /\.(png|gif|jpeg|jpg|woff|woff2|eot|ttf|svg|mov)(\?.*$|$)/,
+                    type: 'asset/resource',
+                },
+                {
+                    // Required for @uswriting/exiftool which contains embedded Perl code in a .cjs file
+                    // Without this, webpack 5 tries to parse it as an ES module and fails
+                    test: /\.cjs$/,
+                    type: 'javascript/auto',
+                },
+                {
+                    test: /\.wasm$/,
+                    type: 'asset/resource'
                 },
             ],
         },
@@ -206,11 +344,6 @@ function getDefaults(grunt) {
     return {
         // application version
         version: version || grunt.file.readJSON(path.join(__dirname, 'package.json')).version,
-
-        // raven settings
-        raven: {
-            dsn: process.env.SUPERDESK_RAVEN_DSN || '',
-        },
 
         // backend server URLs configuration
         server: {

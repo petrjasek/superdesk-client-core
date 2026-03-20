@@ -22,7 +22,7 @@ import {getEditorConfig} from './get-editor-config';
 import {WidgetsConfig} from './WidgetsConfig';
 import {NewFieldSelect} from './new-field-select';
 import {GenericArrayListPageComponent} from 'core/helpers/generic-array-list-page-component';
-import {arrayMove} from '@superdesk/common';
+import {arrayMove} from '@sourcefabric/common';
 import {getTypeForFieldId} from 'apps/workspace/helpers/getTypeForFieldId';
 
 // should be stored in schema rather than editor section of the content profile
@@ -459,7 +459,7 @@ export class ContentProfileFieldsConfig extends React.Component<IProps, IState> 
         }
 
         const tabs = (
-            <div className="sd-nav-tabs" data-test-id="content-profile-tabs">
+            <div className="sd-nav-tabs sd-border--light border-x-0" data-test-id="content-profile-tabs">
                 {
                     getTabs().map((tab) => (
                         <button

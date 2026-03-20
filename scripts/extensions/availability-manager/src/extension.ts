@@ -42,23 +42,25 @@ const extension: IExtension = {
         };
 
         if (extensionStartErrors.length < 1) {
-            contributions.getUserProfileSections = (user) => {
-                const result: Array<IUserProfileSection> = [];
+            if (superdesk.privileges.hasPrivilege(privileges.user_availability_manage_own)) {
+                contributions.getUserProfileSections = (user) => {
+                    const result: Array<IUserProfileSection> = [];
 
-                if (
-                    user._id === superdesk.session.getCurrentUserId()
-                    || superdesk.privileges.hasPrivilege(privileges.user_availability_manage)
-                ) {
-                    result.push({
-                        id: 'availability',
-                        label: gettext('Availability'),
-                        priority: 5,
-                        component: AvailabilitySettingsPage,
-                    });
-                }
+                    if (
+                        user._id === superdesk.session.getCurrentUserId()
+                        || superdesk.privileges.hasPrivilege(privileges.user_availability_manage)
+                    ) {
+                        result.push({
+                            id: 'availability',
+                            label: gettext('Availability'),
+                            priority: 5,
+                            component: AvailabilitySettingsPage,
+                        });
+                    }
 
-                return result;
-            };
+                    return result;
+                };
+            }
 
             if (superdesk.privileges.hasPrivilege(privileges.user_availability)) {
                 if (contributions.pages == null) {
@@ -74,7 +76,7 @@ const extension: IExtension = {
                     component: CorrespondentAvailability,
                     addToSideMenu: addToSideMenu,
                     addToMainMenu: addToSideMenu == null,
-                    showSideMenu: true,
+                    showSideMenu: addToSideMenu != null,
                 });
             }
         }

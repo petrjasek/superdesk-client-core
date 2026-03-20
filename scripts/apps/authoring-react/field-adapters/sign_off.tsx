@@ -92,12 +92,14 @@ class UsersDropdown extends React.Component<IProps> {
 }
 
 export const sign_off: IFieldAdapter<IArticle> = {
-    getFieldV2: (_, fieldSchema) => {
+    getFieldV2: (fieldEditor, fieldSchema) => {
         const allowUserDropdown = appConfig.user != null && appConfig.user.sign_off_mapping;
 
         const fieldConfig: IEditor3Config = {
             minLength: fieldSchema?.minlength,
             maxLength: fieldSchema?.maxlength,
+            maxSoftLength: fieldEditor?.maxSoftLength,
+            showFloatingCount: fieldEditor?.showFloatingCount,
             singleLine: true,
             helperComponent: allowUserDropdown
                 ? ({onChange, language, readOnly}) => {

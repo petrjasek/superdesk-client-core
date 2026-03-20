@@ -16,7 +16,7 @@ import {
 import {ManageRundownTemplates} from './rundown-templates/manage-rundown-templates';
 import {CreateShowModal} from './shows/create-show-modal';
 
-import {classnames, showModal} from '@superdesk/common';
+import {classnames, showModal} from '@sourcefabric/common';
 
 import {CreateRundownFromTemplate} from './rundowns/create-rundown-from-template';
 import {RundownsList} from './rundowns/rundowns-list';
@@ -185,7 +185,7 @@ export class RundownsPage extends React.PureComponent<IProps, IState> {
                                             <SearchBar
                                                 placeholder={gettext('Search')}
                                                 value={this.state.searchString}
-                                                onSubmit={(val) => {
+                                                onSubmit={(val: string) => {
                                                     if (typeof val === 'number') {
                                                         throw new Error('invalid state');
                                                     }

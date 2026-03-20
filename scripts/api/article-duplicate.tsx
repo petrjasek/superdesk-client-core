@@ -7,9 +7,13 @@ import {gettextPlural} from 'core/utils';
 import {sdApi} from 'api';
 import ng from 'core/services/ng';
 
-export function duplicateItems(items: Array<IArticle>, destination: ISendToDestination): Promise<Array<IArticle>> {
+export function duplicateItems(
+    itemIds: Array<IArticle['_id']>,
+    destination: ISendToDestination,
+    preserveEmbargoAndSchedule?: boolean,
+): Promise<Array<IArticle>> {
     return Promise.all(
-        items.map((item) => {
+        itemIds.map((id) => {
             const payload = (() => {
                 if (destination.type === 'personal-space') {
                     return {
@@ -21,6 +25,7 @@ export function duplicateItems(items: Array<IArticle>, destination: ISendToDesti
                         type: 'archive',
                         desk: destination.desk,
                         stage: destination.stage,
+                        preserve_embargo_and_schedule: preserveEmbargoAndSchedule,
                     };
                 } else {
                     assertNever(destination);
@@ -29,13 +34,13 @@ export function duplicateItems(items: Array<IArticle>, destination: ISendToDesti
 
             return httpRequestJsonLocal({
                 method: 'POST',
-                path: `/archive/${item._id}/duplicate`,
+                path: `/archive/${id}/duplicate`,
                 payload: payload,
             });
         }),
     ).then((res: Array<IArticle>) => {
         notify.success(gettextPlural(
-            items.length,
+            itemIds.length,
             'Item duplicated',
             'Items duplicated',
         ));

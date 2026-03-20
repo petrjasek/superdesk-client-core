@@ -32,6 +32,7 @@ import {
 } from '../components/spellchecker/SpellcheckerDecorator';
 import {appConfig} from 'appConfig';
 import {
+    customEditorTags,
     formattingOptionsUnsafeToParseFromHTML,
 } from 'apps/workspace/content/components/get-content-profiles-form-config';
 import {RICH_FORMATTING_OPTION, IArticle} from 'superdesk-api';
@@ -41,6 +42,7 @@ import {
 } from 'apps/authoring/authoring/components/CharacterCountConfigButton';
 import {getMiddlewares} from 'core/redux-utils';
 import {getTextLimitHighlightDecorator} from '../components/text-length-overflow-decorator';
+import {ThinSpaceDecorator} from '../components/thin-spaces/ThinSpaceDecorator';
 import {CompositeDecoratorCustom} from './composite-decorator-custom';
 import {IAcceptSuggestion} from '../components/spellchecker/SpellcheckerContextMenu';
 import {IActiveCell} from '../components/tables/TableBlock';
@@ -65,6 +67,8 @@ interface IProps {
     value?: any;
     limitBehavior?: CharacterLimitUiBehavior;
     limit?: number;
+    softLimit?: number;
+    showFloatingCount?: boolean;
 }
 
 export interface IEditorStore {
@@ -94,30 +98,61 @@ export interface IEditorStore {
     abbreviations: any;
     loading: boolean;
     limitConfig?: EditorLimit;
+    softLimitConfig?: number;
+    showFloatingCount?: boolean;
 }
 
 let editor3Stores = [];
 
+interface IDecoratorStateCache {
+    invisibles: boolean | undefined;
+}
+
+// Cache for tracking decorator state changes across calls.
+// This allows us to detect when configuration changes i.e invisibles toggle on/off
+// and trigger decorator reapplication only when actually needed.
+// Currently tracks invisibles, but can be extended for other decorator dependencies in the future
+let decoratorStateCache: IDecoratorStateCache = {
+    invisibles: undefined,
+};
+
 interface IOptions {
-    spellchecker: {
+    spellchecker?: {
         acceptSuggestion: IAcceptSuggestion,
         enabled?: boolean,
         language?: string,
         warnings?: ISpellcheckWarningsByBlock,
     };
     limitConfig?: EditorLimit,
+    softLimitConfig?: number,
+    invisibles?: boolean;
 }
 
 export const getDecorators = (options: IOptions) => {
-    const {limitConfig} = options;
-    const {spellchecker} = options;
+    const {limitConfig, softLimitConfig, spellchecker, invisibles} = options;
 
     // improve performance by not replacing decorators when possible.
     let mustReApplyDecorators = false;
 
     const decorators: Array<{strategy: any, component: any}> = [LinkDecorator];
+    const invisiblesChanged = decoratorStateCache.invisibles !== invisibles;
 
-    if (spellchecker.enabled === true && spellchecker.warnings != null && spellchecker.language != null) {
+    if (invisibles === true) {
+        // When invisbile is toggled on, add ThinSpaceDecorator and force reapplication
+        mustReApplyDecorators = true;
+        decorators.push(ThinSpaceDecorator);
+    } else if (invisiblesChanged) {
+        // When invisibles is toggled off, we must reapply decorators
+        // to remove the ThinSpaceDecorator that was previously added in the editor
+        mustReApplyDecorators = true;
+    }
+
+    if (
+        spellchecker != null
+        && spellchecker.enabled === true
+        && spellchecker.warnings != null
+        && spellchecker.language != null
+    ) {
         mustReApplyDecorators = true;
 
         decorators.push(
@@ -125,13 +160,22 @@ export const getDecorators = (options: IOptions) => {
         );
     }
 
-    if (limitConfig?.ui === 'highlight' && typeof limitConfig?.chars === 'number') {
+    const isHardHighlight = limitConfig?.ui === 'highlight' && typeof limitConfig?.chars === 'number';
+    const isSoftHighlight = typeof softLimitConfig === 'number';
+
+    if (isHardHighlight || isSoftHighlight) {
         mustReApplyDecorators = true;
 
         decorators.push(
-            getTextLimitHighlightDecorator(limitConfig.chars),
+            getTextLimitHighlightDecorator(
+                limitConfig?.chars,
+                softLimitConfig,
+            ),
         );
     }
+
+    // Update cache with current invisibles state for next comparison
+    decoratorStateCache.invisibles = invisibles;
 
     return {
         decorator: new CompositeDecoratorCustom(decorators),
@@ -208,9 +252,18 @@ export default function createEditorStore(
             chars: props.limit,
         };
 
+    const softLimitConfig: number | null = !props.softLimit
+        ? null
+        : props.softLimit;
+
     let editorState = EditorState.createWithContent(
         content,
-        getDecorators({spellchecker: {acceptSuggestion: 'store-based'}}).decorator,
+        getDecorators({
+            spellchecker: {acceptSuggestion: 'store-based'},
+            limitConfig,
+            softLimitConfig,
+            invisibles: false,
+        }).decorator,
     );
 
     const store: Store<IEditorStore> = createStore<IEditorStore, any, any, any>(
@@ -237,6 +290,8 @@ export default function createEditorStore(
             abbreviations: {},
             loading: false,
             limitConfig,
+            softLimitConfig,
+            showFloatingCount: props.showFloatingCount === true,
         },
         getMiddlewares(),
     );
@@ -320,8 +375,12 @@ export function getInitialContent(props): ContentState {
         ).getCurrentContent();
     }
 
+    const customTagStyles = new Set(customEditorTags.map(({editor3Style}) => editor3Style));
+
     const hasUnsafeFormattingOptions = props.editorFormat != null && props.editorFormat.some(
-        (option: RICH_FORMATTING_OPTION) => formattingOptionsUnsafeToParseFromHTML.includes(option),
+        (option: RICH_FORMATTING_OPTION) => {
+            return formattingOptionsUnsafeToParseFromHTML.includes(option) || customTagStyles.has(option);
+        },
     );
 
     /**

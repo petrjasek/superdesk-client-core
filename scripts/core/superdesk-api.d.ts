@@ -4,6 +4,8 @@ declare module 'superdesk-api' {
     // TYPESCRIPT TYPES
 
     type OrderedMap<K, V> = import('immutable').OrderedMap<K, V>;
+    type GenericFormFieldType = import('../core/ui/components/generic-form/interfaces/form').GenericFormFieldType;
+    type Paths<T> = import('@sourcefabric/common/dist/src/utils/index').Paths<T>;
 
     export interface DeepReadonlyArray<T> extends ReadonlyArray<DeepReadonly<T>> { };
 
@@ -27,6 +29,7 @@ declare module 'superdesk-api' {
     export type Dictionary<K, V> = {[key: string]: V};
 
     // FORMATS
+    export type ObjectId = string;
 
 
     // AUTHORING-REACT
@@ -132,7 +135,7 @@ declare module 'superdesk-api' {
             hasUnsavedChanges: boolean,
             cancelAutosave: () => Promise<void>,
             doClose: () => void,
-        ): Promise<void>;
+        ): Promise<{cancelled: boolean}>;
         getContentProfile(item: T, fieldsAdapter: IFieldsAdapter<T>): Promise<IContentProfileV2>;
         getUserPreferences(): Promise<any>;
         autosave: IAuthoringAutoSave<T>;
@@ -187,6 +190,15 @@ declare module 'superdesk-api' {
         readOnly: boolean;
         actions: Array<ITopBarWidget<T>>;
         toolbarBgColor?: React.CSSProperties['backgroundColor'];
+
+        /**
+         * Optional context values for inline toolbar widgets.
+         * Used by components that need access to setFullWidth and fullWidth state.
+         */
+        inlineToolbarContext?: {
+            setFullWidth?: (() => void) | null;
+            fullWidth?: boolean;
+        };
     }
 
     export interface ITopBarWidget<T> {
@@ -474,6 +486,8 @@ declare module 'superdesk-api' {
         editorFormat?: Array<RICH_FORMATTING_OPTION>;
         minLength?: number;
         maxLength?: number;
+        maxSoftLength?: number;
+        showFloatingCount?: boolean;
         compact?: boolean; // smaller UI element
         singleLine?: boolean; // also limits to plain text
         cleanPastedHtml?: boolean;
@@ -713,6 +727,7 @@ declare module 'superdesk-api' {
 
         // only works react based authoring
         background?: 'light' | 'grey';
+        bodyPadding?: 'none' | 'small' | 'medium'; // default is 'medium'
     }
 
     export interface IGenericSidebarComponentProps<T> {
@@ -773,6 +788,12 @@ declare module 'superdesk-api' {
         icon: string;
         component: React.ComponentClass<IArticleSideWidgetComponentType>;
         isAllowed?(article: IArticle): boolean; // enables limiting widgets depending on article data
+
+        /**
+         * Button type/color for the widget sidebar button.
+         * Requires superdesk-ui-framework support for ISideBarTab.buttonType
+         */
+        buttonType?: 'default' | 'primary' | 'highlight' | 'success' | 'warning' | 'alert';
 
         /**
          * Up to 2 symbols
@@ -966,6 +987,7 @@ declare module 'superdesk-api' {
                 onCloseAfter?(item: IArticle): void;
             };
             monitoring?: {
+                listFiltersConfig?: Array<IMonitoringListFilter>;
                 getFilteringButtons?(deskId: string): Array<IMonitoringFilter>;
             };
             personalSpace?: {
@@ -978,6 +1000,25 @@ declare module 'superdesk-api' {
             publishingSections?: Array<{component: React.ComponentType<{item: IArticle}>}>;
         }
     }
+
+    export type IMonitoringListOperator = 'AND' | 'OR';
+
+    export interface IMonitoringListFilterBase {
+        fieldId: string;
+        label: string;
+        getOptions: () => Array<{id: string; label: string;}>;
+    }
+
+    interface IMonitoringListSingle extends IMonitoringListFilterBase {
+        selectMultiple: false;
+    }
+
+    interface IMonitoringListMultiple extends IMonitoringListFilterBase {
+        selectMultiple: true;
+        operator: IMonitoringListOperator;
+    }
+
+    export type IMonitoringListFilter = IMonitoringListSingle | IMonitoringListMultiple;
 
     export type ISearchPanelWidgetProps<T> = {
         provider: string;
@@ -1024,7 +1065,8 @@ declare module 'superdesk-api' {
         private?: boolean; //Author wants to be publicly visible or hidden [SDBELGA-605]
     }
 
-    // to use as a value, use enum inside 'scripts/apps/search/interfaces.ts'
+    // Keep in sync with `scripts/apps/search/interfaces.ts`
+    // To use as a value, use enum inside 'scripts/apps/search/interfaces.ts'
     export enum ITEM_STATE {
         /**
          * ROOT STATE
@@ -1133,7 +1175,6 @@ declare module 'superdesk-api' {
          */
         UNPUBLISHED = 'unpublished',
     }
-
 
     export interface IRelatedArticle {
         _id: IArticle['_id'];
@@ -1500,6 +1541,63 @@ declare module 'superdesk-api' {
         archive_item: IArticle;
     }
 
+    export enum PUBLISH_QUEUE_STATE {
+        ROUTING = "routing",
+        PENDING = "pending",
+        IN_PROGRESS = "in-progress",
+        RETRYING = "retrying",
+        SUCCESS = "success",
+        CANCELED = "canceled",
+        ERROR = "error",
+        FAILED = "failed",
+    }
+
+    export interface IPublishQueueItem extends IBaseRestApiResponse {
+        item_id: IArticle['_id'];
+        publishing_action: string;
+
+        item_version: IArticle['version'];
+        formatted_item: string;
+
+        state: PUBLISH_QUEUE_STATE;
+        item_encoding?: string;
+        encoded_item_id?: ObjectId | string;
+
+        subscriber_id: ObjectId;
+        codes?: Array<string>;
+
+        published_in_package?: string;
+        published_seq_num?: number;
+
+        publish_schedule?: string;
+        unique_name?: string;
+        content_type?: string;
+        headline?: string;
+
+        transmit_started_at?: string;
+        completed_at?: string;
+        error_message?: string;
+
+        moved_to_legal: boolean;
+        retry_attempt?: number;
+        next_retry_attempt_at?: string;
+        ingest_provider?: ObjectId;
+        associated_items?: Array<string>;
+        priority?: boolean;
+        is_content_api?: boolean
+
+        destination?: {
+            _id?: string;
+            name: string;
+            format: string;
+            delivery_type: string;
+            preview_endpoint_url?: string;
+            config?: {
+                resource_url?: string;
+            }
+        };
+    }
+
     export interface IUserPrivileges {
         [privilege: string]: 1 | 0;
     }
@@ -1514,7 +1612,14 @@ declare module 'superdesk-api' {
 
     export interface IMonitoringGroup {
         _id: string;
-        type: 'search' | 'stage' | 'scheduledDeskOutput' | 'deskOutput' | 'personal' | 'sentDeskOutput';
+        type: 'search'
+        | 'stage'
+        | 'scheduledDeskOutput'
+        | 'deskOutput'
+        | 'personal'
+        | 'sentDeskOutput'
+        | 'spike'
+        | 'spike-personal';
         max_items?: number;
         header?: string;
     }
@@ -1532,7 +1637,7 @@ declare module 'superdesk-api' {
         desk_metadata?: {[key: string]: any};
         content_profiles: {[key: IContentProfile['_id']]: any};
         desk_language?: string;
-        monitoring_default_view?: 'list' | 'swimlane' | 'photogrid';
+        monitoring_default_view?: string;
         default_content_profile: string;
         default_content_template: string;
         slack_channel_name?: string;
@@ -1773,6 +1878,7 @@ declare module 'superdesk-api' {
             showCrops?: boolean;
             imageTitle?: boolean;
             sourceField?: string;
+            showFloatingCount?: boolean;
         }
     };
 
@@ -2077,9 +2183,10 @@ declare module 'superdesk-api' {
 
     export interface IPropsGenericFormItemComponent<T> {
         item: T;
+        index: number;
         page: IGenericListPageComponent<T>;
         inEditMode: boolean;
-        index: number;
+        inPreviewMode: boolean;
         getId(item: T): string;
     }
 
@@ -2087,11 +2194,15 @@ declare module 'superdesk-api' {
         getFormConfig(item?: Partial<T>): IFormGroup;
         defaultSortOption: ISortOption;
         additionalSortOptions?: Array<{label: string; field: string;}>;
+        groupBy?: Array<{condition: (item: T) => boolean; label: string; emptyState?: string}>;
         additionalProps?: P; // allows passing props which will be available in container and item components
         defaultFilters?: Partial<T>;
         ItemComponent: React.ComponentType<IPropsGenericFormItemComponent<T> & {additionalProps?: P}>;
         ItemsContainerComponent?: React.ComponentType<IPropsGenericFormContainer<T> & {additionalProps?: P}>;
 
+        // Triggered everywhere before closing, in preview and create/edit forms
+        // Useful if you'd like to prevent accidental closing of the form.
+        beforeClose?: (item: T) => Promise<boolean>;
         getId(item: T): string;
 
         // Allows initializing a new item with some fields already filled.
@@ -2101,7 +2212,7 @@ declare module 'superdesk-api' {
 
         refreshOnEvents?: Array<string>;
 
-        fieldForSearch?: IFormField; // must be present in formConfig
+        fieldForSearch?: IFormField<T>; // must be present in formConfig
         disallowCreatingNewItem?: true;
         disallowFiltering?: true;
         disallowSorting?: true;
@@ -2120,49 +2231,43 @@ declare module 'superdesk-api' {
         contentMargin?: number;
     }
 
-    export enum FormFieldType {
-        plainText = 'plainText',
-        duration = 'duration',
-        textEditor3 = 'textEditor3',
-        number = 'number',
-        vocabularySingleValue = 'vocabularySingleValue',
-        checkbox = 'checkbox',
-        contentFilterSingleValue = 'contentFilterSingleValue',
-        deskSingleValue = 'deskSingleValue',
-        stageSingleValue = 'stageSingleValue',
-        macroSingleValue = 'macroSingleValue',
-        yesNo = 'yesNo',
-        select = 'select',
-        selectMultiple = 'selectMultiple',
-    }
-
-    export interface IFormField { // don't forget to update runtime type checks
-        type: FormFieldType;
+    interface IFormFieldBase<T extends object> {
+        type: GenericFormFieldType;
 
         required?: boolean;
 
         // custom components for some fields might not require a label or want include a custom one
         label?: string;
 
-        field: string;
+        field: Paths<T>;
 
         // can be used to pass read-only fields or display specific flags
         // component theme, variant or initial state could be set using this
         component_parameters?: {[key: string]: any};
+
+        // default value for the field when creating new items
+        defaultValue?: any;
     }
 
-    export interface IFormGroupCollapsible { // don't forget to update runtime type checks
+    export interface IFormFieldAlert<T> extends IFormFieldBase<T> {
+        type: GenericFormFieldType.alert;
+        value: string;
+    }
+
+    export type IFormField<T> = IFormAlertFieldAlert<T> | IFormFieldBase<T>;
+
+    export interface IFormGroupCollapsible {
         label: string;
         openByDefault: boolean;
     }
 
-    export interface IFormGroup { // don't forget to update runtime type checks
+    export interface IFormGroup<T extends object> {
         direction: 'vertical' | 'horizontal';
         type: 'inline' | IFormGroupCollapsible;
-        form: Array<IFormField | IFormGroup>;
+        form: Array<IFormField<T> | IFormGroup<T>>;
     }
 
-    export interface IPropsGenericArrayListPage<T, P> extends IPropsGenericForm<T, P> {
+    export interface IPropsGenericArrayListPage<T extends object, P> extends IPropsGenericForm<T, P> {
         value: Array<T>;
         onChange(value: Array<T>): void;
 
@@ -2178,7 +2283,7 @@ declare module 'superdesk-api' {
         direction: 'ascending' | 'descending';
     }
 
-    export interface ICrudManagerData<T> {
+    export interface ICrudManagerData<T extends object> {
         _items: Array<T>;
         _meta: {
             max_results: number;
@@ -2192,7 +2297,7 @@ declare module 'superdesk-api' {
         activeSortOption?: ISortOption;
     }
 
-    export interface ICrudManagerMethods<Entity> {
+    export interface ICrudManagerMethods<Entity extends object> {
         read(
             page: number,
             sort: ISortOption,
@@ -2240,6 +2345,7 @@ declare module 'superdesk-api' {
 
     export interface IListItemProps {
         onClick?(): void;
+        onDoubleClick?(): void;
         className?: string;
         inactive?: boolean;
         noHover?: boolean;
@@ -3081,7 +3187,7 @@ declare module 'superdesk-api' {
             };
             showModal: (Component: React.ComponentType<{closeModal(): void;}>, containerClass?: string) => Promise<void>;
             alert(message: string): Promise<void>;
-            confirm(message: string, title?: string): Promise<boolean>;
+            confirm(message: string, title?: string, primaryActionText?: string): Promise<boolean>;
             prompt(options: IPromptOptions): Promise<string>
             showIgnoreCancelSaveDialog(props: IIgnoreCancelSaveProps): Promise<IIgnoreCancelSaveResponse>;
             notify: {
@@ -3134,6 +3240,7 @@ declare module 'superdesk-api' {
             };
             contentProfile: {
                 get(id: string): IContentProfile;
+                getAll(): Array<IContentProfile>;
             };
             vocabulary: {
                 getAll: () => OrderedMap<IVocabulary['_id'], IVocabulary>;
@@ -3153,6 +3260,7 @@ declare module 'superdesk-api' {
                 getActiveDeskId(): IDesk['_id'] | null;
                 waitTilReady(): Promise<void>;
                 getDeskById(id: IDesk['_id']): IDesk;
+                getStageById(id: IStage['_id']): IStage;
             };
             attachment: IAttachmentsApi;
             users: {
@@ -3216,10 +3324,14 @@ declare module 'superdesk-api' {
             getGenericHttpEntityListPageComponent<T extends IBaseRestApiResponse, P>(
                 resource: string,
                 formConfig: IFormGroup,
+
+                // If field path for a sorting option is nested,
+                // an index in elastic has to be created beforehand for sorting to work
                 defaultSortOption?: ISortOption,
                 additionalProps?: P,
             ): React.ComponentType<IPropsGenericForm<T, P>>;
-            getGenericArrayListPageComponent<T, P>(): React.ComponentType<IPropsGenericArrayListPage<T, P>>;
+            getGenericArrayListPageComponent<T extends object, P>():
+                React.ComponentType<IPropsGenericArrayListPage<T, P>>;
             connectCrudManagerHttp<Props, PropsToConnect, Entity extends IBaseRestApiResponse>(
                 WrappedComponent: React.ComponentType<Props & PropsToConnect>,
                 name: string,
@@ -3292,11 +3404,11 @@ declare module 'superdesk-api' {
             };
         };
         forms: {
-            FormFieldType: typeof FormFieldType;
-            generateFilterForServer(type: FormFieldType, value: any): any;
+            GenericFormFieldType: typeof GenericFormFieldType;
+            generateFilterForServer(type: GenericFormFieldType, value: any): any;
             isIFormGroupCollapsible(x: "inline" | IFormGroupCollapsible): x is IFormGroupCollapsible;
-            isIFormGroup(x: IFormGroup | IFormField): x is IFormGroup;
-            isIFormField(x: IFormGroup | IFormField): x is IFormField;
+            isIFormGroup<T>(x: IFormGroup<T> | IFormField<T>): x is IFormGroup<T>;
+            isIFormField<T>(x: IFormGroup<T> | IFormField<T>): x is IFormField<T>;
             getFormFieldPreviewComponent(
                 item: {
                     readonly [key: string]: any;
@@ -3306,8 +3418,14 @@ declare module 'superdesk-api' {
             ): JSX.Element;
         };
         localization: {
-            gettext(message: string, params?: {[placeholder: string]: string | number | React.ComponentType}): string;
-            gettextPlural(count: number, singular: string, plural: string, params?: {[placeholder: string]: string | number | React.ComponentType}): string;
+            gettext(message: string): string;
+            gettext(message: string, params: {[placeholder: string]: string | number}): string;
+            gettext(message: string, params: {[placeholder: string]: string | number | React.ComponentType | (() => JSX.Element)}): Array<JSX.Element>;
+
+            gettextPlural(count: number, singular: string, plural: string): string;
+            gettextPlural(count: number, singular: string, plural: string, params: {[key: string]: string | number}): string;
+            gettextPlural(count: number, singular: string, plural: string, params: {[key: string]: string | number | React.ComponentType | (() => JSX.Element)}): Array<JSX.Element>;
+
             formatDate(date: Date | string | moment.Moment, options?: {timezoneId?: string; longFormat?: boolean}): string;
             formatDateTime(date: Date, timezoneId?: string): string;
             longFormatDateTime(date: Date | string, timezoneId?: string): string;
@@ -3338,6 +3456,7 @@ declare module 'superdesk-api' {
             getCurrentUser(): Promise<IUser>;
             getSessionId(): String;
             getCurrentUserId(): String;
+            getUniqueClientId(): string;
         };
         browser: {
             location: {
@@ -3515,6 +3634,9 @@ declare module 'superdesk-api' {
 
         default_timezone: string;
 
+        /** allow setting default tab to open in authoring sidebar */
+        authoring_actions_default_tab?: 'publish' | 'send_to';
+
         // TANSA SERVER CONFIG
         tansa?: {
             base_url: string;
@@ -3536,7 +3658,8 @@ declare module 'superdesk-api' {
         };
         apps: any;
         defaultRoute: string;
-        startingDay: any;
+        startingDay?: number | string | null;
+        start_of_week?: number | string | null;
         features: {
             swimlane?: {
                 defaultNumberOfColumns: number;
@@ -3575,8 +3698,19 @@ declare module 'superdesk-api' {
             customAuthoringTopbar?: {
                 toDesk?: boolean;
                 publish?: boolean;
+
+                // Create an update of the item and close the item
                 closeAndContinue?: boolean;
+
+                // Publish the item and create an update
                 publishAndContinue?: boolean;
+
+                // Duplicate the item to specified desk and stage and continue working on the original
+                sendAndDuplicate?: {
+                    deskName: string;
+                    stageName: string;
+                    preserveEmbargoAndSchedule?: boolean;
+                };
             },
             showPublishSchedule?: boolean
             hideCreatePackage?: boolean;
@@ -3621,6 +3755,13 @@ declare module 'superdesk-api' {
         infoRemovedFields: {};
         previewSubjectFilterKey: any;
         authoring?: {
+            customEditorTags?: Array<{
+                id: string;
+                icon: string;
+                label: string;
+                borderColor: 'tag-color-1' | 'tag-color-2';
+                tooltip?: string;
+            }>;
             timeToRead?: any;
             lineLength?: number;
             preview?: {
@@ -3665,16 +3806,53 @@ declare module 'superdesk-api' {
             };
         };
         list: {
-            narrowView?: any;
-            singleLineView?: any;
-            singleLine?: any;
-            priority?: Array<string>;
-            firstLine?: Array<string | IListViewFieldWithOptions>,
-            secondLine?: Array<string | IListViewFieldWithOptions>,
-            relatedItems?: {
-                firstLine: Array<string | IListViewFieldWithOptions>,
-                secondLine: Array<string | IListViewFieldWithOptions>,
+            /** Fields to show in first/second lines of lists of articles in monitoring/search */
+            firstLine?: Array<string | IListViewFieldWithOptions>;
+            secondLine?: Array<string | IListViewFieldWithOptions>;
+
+            compactView?: {
+                firstLine?: Array<string | IListViewFieldWithOptions>,
+                secondLine?: Array<string | IListViewFieldWithOptions>,
             };
+
+            /**
+             * If a more compact view is desired, the instance may be configured to only show one line.
+             * `list.firstLine`, `list.secondLine` would then not be used.
+             *
+             * TO-REFACTOR: remove singleLine, singleLineView
+             * use `list.firstLine` instead and set `list.secondLine` to be empty.
+             */
+            singleLine?: Array<string | IListViewFieldWithOptions>;
+            singleLineView?: boolean;
+
+            /**
+             * Set fields to be displayed when there is limited horizontal space available.
+             * e.g when all - monitoring, item preview and authoring are visible.
+             *
+             * NOTE: will only work if `singleLineView` is enabled.
+             *
+             * TO-REFACTOR: consider removing the requirement that `singleLine` be enabled for `narrowView` to work.
+             * TO-REFACTOR: might no longer be relevant since preview now floats when all 3 are open.
+             */
+            narrowView?: Array<string | IListViewFieldWithOptions>;
+
+            /**
+             * Fields to show for related items.
+             */
+            relatedItems?: {
+                firstLine: Array<string | IListViewFieldWithOptions>;
+                secondLine: Array<string | IListViewFieldWithOptions>;
+            };
+
+            /**
+             * Used for choosing whether `priority` or `urgency` would be displayed next to item type.
+             *
+             * TO-REFACTOR: Replace with a more generic configuration option.
+             * Technically it renders an element over both lines. It's not doing anything priority specific.
+             * List config should be improved to allow any number of elements spanning both lines and also
+             * setting rendering location e.g. start/end and and order of fields.
+             */
+            priority?: Array<string>;
         };
         gridViewFields: Array<string>;
         gridViewFooterFields: {
@@ -4002,7 +4180,7 @@ declare module 'superdesk-api' {
         SubjectReference: string;
         Category: string;
         SupplementalCategories: string;
-        Keywords: string;
+        Keywords: string | Array<string>;
         ContentLocationCode: string;
         ContentLocationName: string;
         ReleaseDate: string;
@@ -4029,6 +4207,44 @@ declare module 'superdesk-api' {
         'Writer-Editor': string;
         LanguageIdentifier: string;
     }
+
+    export type XMPMetadata =
+        | 'Destination'
+        | 'ServiceIdentifier'
+        | 'ProductID'
+        | 'DateSent'
+        | 'TimeSent'
+        | 'Title'
+        | 'EditStatus'
+        | 'Urgency'
+        | 'SubjectCode'
+        | 'Category'
+        | 'SupplementalCategories'
+        | 'Subject'
+        | 'LocationCode'
+        | 'LocationName'
+        | 'ReleaseDate'
+        | 'ReleaseTime'
+        | 'ExpirationDate'
+        | 'ExpirationTime'
+        | 'Instructions'
+        | 'DateCreated'
+        | 'Creator'
+        | 'AuthorsPosition'
+        | 'City'
+        | 'Location'
+        | 'State'
+        | 'CountryCode'
+        | 'Country'
+        | 'TransmissionReference'
+        | 'Headline'
+        | 'Credit'
+        | 'Source'
+        | 'Rights'
+        | 'CreatorContactInfo'
+        | 'Description'
+        | 'CaptionWriter'
+        | 'Language';
 
     export interface ISubject {
         name: string;

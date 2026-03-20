@@ -10,7 +10,6 @@ import {getArticleLabel, gettext} from 'core/utils';
 import {ItemSwimlane} from './ItemSwimlane';
 import {ItemPhotoGrid} from './ItemPhotoGrid';
 import {ListItemTemplate} from './ItemListTemplate';
-import {ItemMgridTemplate} from './ItemMgridTemplate';
 import {IArticle, IDesk, IPublishedArticle} from 'superdesk-api';
 import {querySelectorParent} from 'core/helpers/dom/querySelectorParent';
 import {AuthoringWorkspaceService} from 'apps/authoring/authoring/services/AuthoringWorkspaceService';
@@ -331,24 +330,12 @@ export class Item extends React.Component<IProps, IState> {
 
         const getTemplate = () => {
             switch (this.props.view) {
-                case 'swimlane2':
+                case 'swimlane':
                     return (
                         <ItemSwimlane
                             item={item}
                             itemSelected={itemSelected}
                             isLocked={isLocked}
-                            getActionsMenu={getActionsMenu}
-                            multiSelect={this.props.multiSelect}
-                        />
-                    );
-                case 'mgrid':
-                    return (
-                        <ItemMgridTemplate
-                            item={item}
-                            itemSelected={itemSelected}
-                            desk={this.props.desk}
-                            swimlane={this.props.swimlane}
-                            ingestProvider={this.props.ingestProvider}
                             getActionsMenu={getActionsMenu}
                             multiSelect={this.props.multiSelect}
                         />
@@ -388,6 +375,7 @@ export class Item extends React.Component<IProps, IState> {
                             toggleNested={this.toggleNested}
                             singleLine={this.props.singleLine}
                             customRender={this.props.customRender}
+                            view={this.props.view}
                         />
                     );
             }
@@ -395,8 +383,7 @@ export class Item extends React.Component<IProps, IState> {
 
         const getNested = () => {
             switch (this.props.view) {
-                case 'swimlane2':
-                case 'mgrid':
+                case 'swimlane':
                 case 'photogrid':
                     return null;
                 default:

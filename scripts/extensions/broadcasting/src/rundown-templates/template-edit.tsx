@@ -12,7 +12,7 @@ import {
     Checkbox,
     DurationInput,
 } from 'superdesk-ui-framework/react';
-import {arrayInsertAtIndex, CreateValidators, WithValidation} from '@superdesk/common';
+import {arrayInsertAtIndex, CreateValidators, WithValidation} from '@sourcefabric/common';
 import {IRRule, IRundownItemBase, IRundownItemTemplateInitial, IRundownTemplateBase} from '../interfaces';
 import {superdesk} from '../superdesk';
 import {stringNotEmpty} from '../form-validation';
@@ -351,7 +351,9 @@ export class RundownTemplateViewEdit extends React.PureComponent<IProps, IState>
                                                                 });
                                                             }}
 
-                                                            firstDayOfWeek={superdesk.instance.config.startingDay}
+                                                            firstDayOfWeek={
+                                                                Number(superdesk.instance.config.startingDay) || 0
+                                                            }
                                                             readOnly={this.props.readOnly}
                                                         />
 

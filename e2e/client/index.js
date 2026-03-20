@@ -1,7 +1,22 @@
 import {startApp} from 'superdesk-core/scripts/index';
 
 setTimeout(() => {
-    const styles = 'body {font-family: Arial!important}';
+    // `icon-` allows superdesk icon font
+    // `.pi` allows prime react icon font
+
+    const styles = `
+    *:not([class^="icon-"], [class*="big-icon--"], [class*="filetype-icon-"], .pi) {
+        font-family: Arial!important;
+    }
+
+    * {
+        -webkit-font-smoothing: none !important;
+        font-variant-ligatures: none !important;
+        font-feature-settings: 'liga' 0 !important;
+        font-kerning: none !important;
+        text-rendering: optimizespeed !important;
+    }
+  `;
 
     const styleSheet = document.createElement("style");
     styleSheet.textContent = styles;

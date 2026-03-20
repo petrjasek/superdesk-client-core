@@ -124,7 +124,6 @@ describe('search', () => {
         authoring.writeTextToAbstract('This is Abstract');
         authoring.save();
         authoring.sendTo('Politic Desk');
-        authoring.confirmSendTo();
         monitoring.switchToDesk('POLITIC DESK');
         expect(monitoring.getTextItem(0, 0)).toBe('From-Sports-To-Politics');
 
@@ -269,7 +268,7 @@ describe('search', () => {
     it('can search scheduled', () => {
         globalSearch.waitForItemCount(16);
         globalSearch.actionOnItem('Edit', 'item9', true);
-        authoring.schedule(false);
+        authoring.schedule();
 
         browser.wait(ECE.stalenessOf(el(['notification--success'])));
 
@@ -288,8 +287,8 @@ describe('search', () => {
         dateScheduled.click();
 
         globalSearch.waitForItemCount(1);
-        expect(globalSearch.getItem(0).element(by.className('state-scheduled')).isDisplayed()).toBe(true);
-        expect(globalSearch.getItem(0).element(by.className('state-scheduled')).getText()).toEqual('SCHEDULED');
+        expect(globalSearch.getItem(0).element(by.css('.label, .state-label')).isDisplayed()).toBe(true);
+        expect(globalSearch.getItem(0).element(by.css('.label, .state-label')).getText()).toEqual('SCHEDULED');
         expect(element.all(by.repeater('key in keys')).count()).toBe(1);
         element(by.css('.tag-label__remove')).click();
         globalSearch.waitForItemCount(16);

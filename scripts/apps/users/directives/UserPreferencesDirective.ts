@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 /* tslint:disable:max-line-length */
 import {gettext} from 'core/utils';
-import {appConfig, extensions, getUserInterfaceLanguage} from 'appConfig';
+import {appConfig, extensions, userInterfaceLanguage} from 'appConfig';
 import {applyDefault} from 'core/helpers/typescript-helpers';
 import {DEFAULT_EDITOR_THEME} from 'apps/authoring/authoring/services/AuthoringThemesService';
 import {cloneDeep, pick} from 'lodash';
@@ -25,7 +25,6 @@ export function UserPreferencesDirective(
 ) {
     // human readable labels for server values
     const LABELS = {
-        mgrid: gettext('Grid View'),
         compact: gettext('List View'),
         photogrid: gettext('Photo Grid View'),
         list: gettext('List View'),
@@ -33,7 +32,6 @@ export function UserPreferencesDirective(
     };
 
     const ICONS = {
-        mgrid: 'grid-view',
         compact: 'list-view',
         photogrid: 'grid-view',
         list: 'list-view',
@@ -43,7 +41,7 @@ export function UserPreferencesDirective(
     return {
         templateUrl: asset.templateUrl('apps/users/views/user-preferences.html'),
         link: function(scope, element, attrs) {
-            const userLang = getUserInterfaceLanguage().replace('_', '-');
+            const userLang = userInterfaceLanguage.replace('_', '-');
             const body = angular.element('body');
             const NOTIFICATIONS_KEY = 'notifications';
 
@@ -473,6 +471,10 @@ export function UserPreferencesDirective(
                         scope.categories.forEach((cat) => {
                             val.selected[cat.qcode] = !!cat.selected;
                         });
+
+                        // avoid overwriting selected categories
+                        patchObject[key] = _.defaults(val, scope.preferences[key]);
+                        return;
                     }
 
                     if (key === 'desks:preferred') {
@@ -480,6 +482,10 @@ export function UserPreferencesDirective(
                         scope.desks.forEach((desk) => {
                             val.selected[desk._id] = !!desk.selected;
                         });
+
+                        // avoid overwriting selected desks
+                        patchObject[key] = _.defaults(val, scope.preferences[key]);
+                        return;
                     }
 
                     patchObject[key] = _.merge(val, scope.preferences[key]);

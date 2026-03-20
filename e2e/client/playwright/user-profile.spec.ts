@@ -1,7 +1,9 @@
 import {test, expect} from '@playwright/test';
 import {restoreDatabaseSnapshot, s} from './utils';
 
-test.setTimeout(50000);
+test.setTimeout(10000);
+
+const MAILCRAB = 'http://localhost:1080';
 
 test('switching system language', async ({page}) => {
     await restoreDatabaseSnapshot();
@@ -28,7 +30,7 @@ test('can edit my profile', async ({page}) => {
         {label: 'First Name', newValue: 'Richard', type: 'text'},
         {label: 'Last Name', newValue: 'Roe', type: 'text'},
         {label: 'Email', newValue: 'richard@example.com', type: 'text'},
-        {label: 'Default Desk', newValue: 'Finances', type: 'select'},
+        {label: 'Default Desk', newValue: 'Finance', type: 'select'},
         {label: 'Sign-Off', newValue: 'RichardRoe', type: 'text'},
         {label: 'Byline', newValue: 'Richard Roe, CEO', type: 'text'},
         {label: 'Job Title', newValue: 'CEO', type: 'select'},
@@ -57,4 +59,61 @@ test('can edit my profile', async ({page}) => {
             await expect(field.locator('option:checked')).toHaveText(value.newValue);
         }
     }
+});
+
+test('can disable a user', async ({page}) => {
+    await restoreDatabaseSnapshot();
+    await page.goto('/#/users');
+
+    const userList = page.locator(s('users-list'));
+    const user = userList.locator(s('users-list-item=Jane Doe'));
+    const userFilter = page.locator(s('user-filter'));
+
+    await userFilter.selectOption('Active');
+    await user.hover();
+    await userList.getByRole('button', {name: 'Disable user'}).click();
+    await page.locator(s('modal-confirm')).getByRole('button', {name: 'Ok'}).click();
+    await expect(user).not.toBeVisible();
+
+    await userFilter.selectOption('Disabled');
+    await expect(user).toBeVisible();
+});
+
+test('can reset password', async ({page}) => {
+    await restoreDatabaseSnapshot();
+    await page.goto('/#/profile');
+
+    await page.locator(s('my-profile')).click();
+    await page.locator(s('my-profile-dropdown')).getByRole('button', {name: 'Sign Out'}).click();
+    await page.locator(s('login-page')).getByRole('link', {name: 'Forgot password?'}).click();
+    await page.getByPlaceholder('Email').fill('admin@example.com');
+    await page.getByRole('button', {name: 'Get token'}).click();
+
+    // Navigate to MailCrab to get the reset email
+    await page.goto(MAILCRAB);
+    await page.getByRole('listitem')
+        .filter({hasText: 'Reset password'})
+        .first()
+        .click();
+
+    // Extract the password reset link from the iFrame email content
+    const resetPasswordLink = await page.frameLocator('iFrame')
+        .locator('p:has-text("Please use this link") a')
+        .getAttribute('href');
+
+    if (!resetPasswordLink) throw new Error('Reset link was not found in the iFrame');
+
+    await page.goto(resetPasswordLink);
+
+    // Reset password
+    await page.locator('form[name="resetForm"] input[name="password"]').fill('admin123.');
+    await page.locator('form[name="resetForm"] input[name="passwordConfirm"]').fill('admin123.');
+    await page.getByRole('button', {name: 'Reset password'}).click();
+
+    // Login with new password
+    await page.locator('form[name="loginForm"]').getByPlaceholder('username').fill('admin');
+    await page.locator('form[name="loginForm"]').getByPlaceholder('password').fill('admin123.');
+    await page.getByRole('button', {name: 'Log in'}).click();
+
+    await expect(page).toHaveURL('http://localhost:9000/#/workspace');
 });
